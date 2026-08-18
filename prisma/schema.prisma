@@ -16,7 +16,56 @@ datasource db {
 }
 
 model User {
-  id String @id @default(cuid())
-  email String @unique
+  id           String       @id @default(cuid())
+  email        String       @unique
+  passwordHash String
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  credentials  Credential[]
+  sessions     Session[]
+  challenges   Challenge[]
+}
+
+model Credential {
+  id         String   @id @default(cuid())
+  credentialID String @unique
+  publicKey  String
+  counter    Int      @default(0)
+  transports String?
+  aaguid     String?
+  createdAt  DateTime @default(now())
+  lastUsedAt DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  expiresAt DateTime
   createdAt DateTime @default(now())
+  lastUsedAt DateTime?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model Challenge {
+  id        String   @id @default(cuid())
+  challenge String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId String?
+  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([userId])
 }
