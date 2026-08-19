@@ -141,26 +141,44 @@ export function SubmitButton({
   );
 }
 
-export function PasskeyButton({ children }: { children: React.ReactNode }) {
+type PasskeyButtonProps = Omit<
+  React.ComponentProps<"button">,
+  "type" | "className"
+> & {
+  pending?: boolean;
+};
+
+export function PasskeyButton({
+  pending,
+  disabled,
+  children,
+  ...props
+}: PasskeyButtonProps) {
   return (
     <button
       type="button"
-      className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100"
+      disabled={disabled ?? pending}
+      className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100"
+      {...props}
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={1.8}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="h-4 w-4"
-        aria-hidden
-      >
-        <circle cx="9" cy="8" r="3.5" />
-        <path d="M2.5 19c0-3 2.9-5 6.5-5" />
-        <path d="M17 10.5a2.5 2.5 0 0 1 2.5 2.5v1M14.5 14h5v6h-5z" />
-      </svg>
+      {pending ? (
+        <Spinner />
+      ) : (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-4 w-4"
+          aria-hidden
+        >
+          <circle cx="9" cy="8" r="3.5" />
+          <path d="M2.5 19c0-3 2.9-5 6.5-5" />
+          <path d="M17 10.5a2.5 2.5 0 0 1 2.5 2.5v1M14.5 14h5v6h-5z" />
+        </svg>
+      )}
       {children}
     </button>
   );
