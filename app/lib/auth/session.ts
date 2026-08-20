@@ -1,7 +1,27 @@
 import { createHash, randomBytes } from "node:crypto";
+import type { NextResponse } from "next/server";
 import { prisma } from "../prisma";
 
 const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+
+export const SESSION_COOKIE_NAME = "session";
+
+type SessionCookie = { token: string; expiresAt: Date };
+
+export function setSessionCookie(
+  response: NextResponse,
+  session: SessionCookie,
+) {
+  response.cookies.set({
+    name: SESSION_COOKIE_NAME,
+    value: session.token,
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    expires: session.expiresAt,
+    path: "/",
+  });
+}
 
 function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");

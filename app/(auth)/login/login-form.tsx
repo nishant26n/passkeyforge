@@ -112,7 +112,12 @@ export function LoginForm({ registered }: { registered?: boolean }) {
         <Divider>or</Divider>
       </div>
 
-      <PasskeyButton>Continue with a passkey</PasskeyButton>
+      <PasskeyButton
+        disabled={pending}
+        onClick={() => router.push("/login/passkey")}
+      >
+        Continue with a passkey
+      </PasskeyButton>
     </Card>
   );
 }
