@@ -1,5 +1,5 @@
 import { verifyPassword } from "@/app/lib/auth/register";
-import { createSession } from "@/app/lib/auth/session";
+import { createSession, setSessionCookie } from "@/app/lib/auth/session";
 import { prisma } from "@/app/lib/prisma";
 import { NextResponse } from "next/server";
 import z from "zod";
@@ -62,15 +62,7 @@ export async function POST(request: Request) {
       },
     });
 
-    response.cookies.set({
-      name: "session",
-      value: session.token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      expires: session.expiresAt,
-      path: "/",
-    });
+    setSessionCookie(response, session);
 
     return response;
   } catch (error) {
