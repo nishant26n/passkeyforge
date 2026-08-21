@@ -1,5 +1,6 @@
 import { createSession, setSessionCookie } from "@/app/lib/auth/session";
 import { prisma } from "@/app/lib/prisma";
+import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 
@@ -37,6 +38,26 @@ export async function POST(request: Request) {
       return NextResponse.json(
         { error: "Invalid recovery credentials" },
         { status: 401 },
+      );
+    }
+
+    const forwardedFor = request.headers.get("x-forwarded-for");
+
+    const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+
+    const rateLimit = await checkAuthRateLimit("recovery", email, ip);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "Too many attempts. Please try again later.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+          },
+        },
       );
     }
 

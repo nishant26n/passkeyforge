@@ -1,5 +1,6 @@
 import { createSession, setSessionCookie } from "@/app/lib/auth/session";
 import { prisma } from "@/app/lib/prisma";
+import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { NextResponse } from "next/server";
 import { verify } from "otplib";
 
@@ -23,6 +24,26 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({
       where: { email },
     });
+
+    const forwardedFor = request.headers.get("x-forwarded-for");
+
+    const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+
+    const rateLimit = await checkAuthRateLimit("recovery", email, ip);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "Too many attempts. Please try again later.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+          },
+        },
+      );
+    }
 
     if (!user || !user.totpEnabled || !user.totpSecret) {
       return NextResponse.json(

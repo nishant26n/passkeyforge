@@ -1,6 +1,7 @@
 import { verifyPassword } from "@/app/lib/auth/register";
 import { createSession, setSessionCookie } from "@/app/lib/auth/session";
 import { prisma } from "@/app/lib/prisma";
+import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { NextResponse } from "next/server";
 import z from "zod";
 
@@ -32,6 +33,26 @@ export async function POST(request: Request) {
     const user = await prisma.user.findUnique({
       where: { email },
     });
+
+    const forwardedFor = request.headers.get("x-forwarded-for");
+
+    const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+
+    const rateLimit = await checkAuthRateLimit("login", email, ip);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "Too many attempts. Please try again later.",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+          },
+        },
+      );
+    }
 
     if (!user) {
       return NextResponse.json(
