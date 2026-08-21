@@ -11,6 +11,8 @@ export default async function Home() {
     redirect("/login");
   }
 
+  // First paint only — the client refetches through
+  // GET /api/webauthn/credentials after adding or revoking a passkey
   const credentials = await prisma.credential.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },
@@ -23,7 +25,11 @@ export default async function Home() {
 
   const passkeys: PasskeySummary[] = credentials.map((credential) => ({
     id: credential.id,
+    name: credential.name,
     addedAt: dateFormat.format(credential.createdAt),
+    lastUsedAt: credential.lastUsedAt
+      ? dateFormat.format(credential.lastUsedAt)
+      : null,
     transports: credential.transports
       ? (JSON.parse(credential.transports) as string[])
       : [],
@@ -39,7 +45,7 @@ export default async function Home() {
           {user.email}
         </p>
         <div className="mt-6 border-t border-zinc-200 pt-6 dark:border-zinc-800">
-          <PasskeyManager passkeys={passkeys} />
+          <PasskeyManager initialPasskeys={passkeys} />
         </div>
         <div className="mt-6">
           <LogoutButton />
