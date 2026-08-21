@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/app/lib/auth/current-user";
 import { prisma } from "@/app/lib/prisma";
@@ -38,6 +39,12 @@ export default async function Home() {
   return (
     <div className="flex flex-1 items-center justify-center bg-zinc-50 px-4 font-sans dark:bg-black">
       <div className="w-full max-w-sm rounded-2xl border border-zinc-200 bg-white p-8 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+        <Link
+          href="/settings/passkeys"
+          className="mb-6 inline-block cursor-pointer rounded-md border border-zinc-300 px-4 py-2 text-sm text-zinc-700 dark:border-zinc-700 dark:text-zinc-300"
+        >
+          Settings
+        </Link>
         <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
           You&apos;re signed in
         </h1>
