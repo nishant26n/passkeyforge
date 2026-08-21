@@ -19,12 +19,17 @@ model User {
   id           String       @id @default(cuid())
   email        String       @unique
   passwordHash String
+
+  totpSecret String?
+  totpEnabled Boolean @default(false)
+
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
 
   credentials  Credential[]
   sessions     Session[]
   challenges   Challenge[]
+  recoveryCodes RecoveryCode[]
 }
 
 model Credential {
@@ -34,6 +39,7 @@ model Credential {
   counter    Int      @default(0)
   transports String?
   aaguid     String?
+  name         String?
   createdAt  DateTime @default(now())
   lastUsedAt DateTime?
 
@@ -48,6 +54,7 @@ model Session {
   tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
+  rotatedAt DateTime?
   lastUsedAt DateTime?
 
   userId String
@@ -67,5 +74,17 @@ model Challenge {
   user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
+  @@index([userId])
+}
+
+model RecoveryCode {
+  id        String   @id @default(cuid())
+  codeHash  String   @unique
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
 }

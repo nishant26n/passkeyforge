@@ -12,7 +12,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await request.json();
+    // `credential` is the raw attestation from the browser; `name` is the
+    // optional label the user typed before starting the ceremony
+    const { credential: attestation, name } = await request.json();
+
+    const trimmedName =
+      typeof name === "string" && name.trim() ? name.trim().slice(0, 60) : null;
 
     // Look up the challenge we issued in /register/options
     const challengeRecord = await prisma.challenge.findFirst({
@@ -31,7 +36,7 @@ export async function POST(request: Request) {
     }
 
     const verification = await verifyRegistrationResponse({
-      response: body,
+      response: attestation,
       expectedChallenge: challengeRecord.challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
@@ -59,6 +64,7 @@ export async function POST(request: Request) {
           ? JSON.stringify(credential.transports)
           : null,
         aaguid,
+        name: trimmedName,
         userId: user.id,
       },
     });

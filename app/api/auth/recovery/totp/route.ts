@@ -1,34 +1,25 @@
-import { verifyPassword } from "@/app/lib/auth/register";
 import { createSession, setSessionCookie } from "@/app/lib/auth/session";
 import { prisma } from "@/app/lib/prisma";
 import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { NextResponse } from "next/server";
-import z from "zod";
-
-const loginSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .email()
-    .transform((email) => email.toLowerCase()),
-  password: z.string().min(1),
-});
+import { verify } from "otplib";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const result = loginSchema.safeParse(body);
 
-    if (!result.success) {
+    const email = String(body.email ?? "")
+      .trim()
+      .toLocaleLowerCase();
+
+    const code = String(body.code ?? "").trim();
+
+    if (!email || !code) {
       return NextResponse.json(
-        {
-          error: "Invalid email or password",
-        },
+        { error: "Email and code are required" },
         { status: 400 },
       );
     }
-
-    const { email, password } = result.data;
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -38,7 +29,7 @@ export async function POST(request: Request) {
 
     const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
 
-    const rateLimit = await checkAuthRateLimit("login", email, ip);
+    const rateLimit = await checkAuthRateLimit("recovery", email, ip);
 
     if (!rateLimit.allowed) {
       return NextResponse.json(
@@ -54,22 +45,21 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!user) {
+    if (!user || !user.totpEnabled || !user.totpSecret) {
       return NextResponse.json(
-        {
-          error: "Invalid email or password",
-        },
+        { error: "Invalid recovery credentials" },
         { status: 401 },
       );
     }
 
-    const passwordValid = await verifyPassword(password, user.passwordHash);
+    const result = await verify({
+      secret: user.totpSecret,
+      token: code,
+    });
 
-    if (!passwordValid) {
+    if (!result.valid) {
       return NextResponse.json(
-        {
-          error: "Invalid email or password",
-        },
+        { error: "Invalid recovery code" },
         { status: 401 },
       );
     }
@@ -77,19 +67,19 @@ export async function POST(request: Request) {
     const session = await createSession(user.id);
 
     const response = NextResponse.json({
-      user: {
-        id: user.id,
-        email: user.email,
-      },
+      authenticated: true,
     });
 
+    // createSession only writes the DB row — without this the browser holds no
+    // session cookie and the redirect to / bounces straight back to /login
     setSessionCookie(response, session);
 
     return response;
   } catch (error) {
-    console.error("Login failed:", error);
+    console.error("TOTP recovery error:", error);
+
     return NextResponse.json(
-      { error: "Something went wrong" },
+      { error: "Failed to authenticate with TOTP" },
       { status: 500 },
     );
   }

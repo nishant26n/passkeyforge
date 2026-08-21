@@ -63,6 +63,15 @@ export async function getSession(token: string) {
     return null;
   }
 
+  // A rotated token has already been replaced. Presenting it again means the
+  // cookie leaked, so drop the row rather than honour it until natural expiry.
+  if (session.rotatedAt) {
+    await prisma.session.delete({
+      where: { id: session.id },
+    });
+    return null;
+  }
+
   if (session.expiresAt <= new Date()) {
     await prisma.session.delete({
       where: { id: session.id },
@@ -81,4 +90,50 @@ export async function deleteSession(token: string) {
       tokenHash,
     },
   });
+}
+
+export async function rotateSession(token: string) {
+  const tokenHash = hashSessionToken(token);
+  const session = await prisma.session.findUnique({
+    where: { tokenHash },
+  });
+
+  if (!session) {
+    return null;
+  }
+
+  // Already rotated => possible token reuse
+  if (session.rotatedAt) {
+    // Invalidate the session
+    await prisma.session.delete({
+      where: {
+        id: session.id,
+      },
+    });
+    return null;
+  }
+
+  // Expired session cannot be rotated: checked here too, not just in the
+  // caller, so a direct call can't resurrect a dead session into a fresh 7 days
+  if (session.expiresAt <= new Date()) {
+    await prisma.session.delete({
+      where: {
+        id: session.id,
+      },
+    });
+    return null;
+  }
+
+  await prisma.session.update({
+    where: {
+      id: session.id,
+    },
+    data: {
+      rotatedAt: new Date(),
+      lastUsedAt: new Date(),
+    },
+  });
+
+  // Create a fresh session
+  return createSession(session.userId);
 }

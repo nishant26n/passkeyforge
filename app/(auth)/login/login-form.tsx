@@ -112,12 +112,30 @@ export function LoginForm({ registered }: { registered?: boolean }) {
         <Divider>or</Divider>
       </div>
 
-      <PasskeyButton
-        disabled={pending}
-        onClick={() => router.push("/login/passkey")}
-      >
-        Continue with a passkey
-      </PasskeyButton>
+      <div className="flex flex-col gap-5">
+        <PasskeyButton
+          disabled={pending}
+          onClick={() => router.push("/login/passkey")}
+        >
+          Continue with a passkey
+        </PasskeyButton>
+
+        <PasskeyButton
+          disabled={pending}
+          onClick={() => router.push("/authenticator-login")}
+        >
+          Continue with an authenticator code
+        </PasskeyButton>
+      </div>
+
+      <div className="mt-4 w-full text-center">
+        <Link
+          href="/recovery"
+          className="text-sm text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
+        >
+          Recover your account
+        </Link>
+      </div>
     </Card>
   );
 }
