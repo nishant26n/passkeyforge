@@ -30,10 +30,6 @@ export async function POST(request: Request) {
 
     const { email, password } = result.data;
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
-
     const forwardedFor = request.headers.get("x-forwarded-for");
 
     const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
@@ -53,6 +49,10 @@ export async function POST(request: Request) {
         },
       );
     }
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
     if (!user) {
       return NextResponse.json(

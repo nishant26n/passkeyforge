@@ -10,7 +10,7 @@ export async function POST(request: Request) {
 
     const email = String(body.email ?? "")
       .trim()
-      .toLocaleLowerCase();
+      .toLowerCase();
 
     const code = String(body.code ?? "").trim();
 
@@ -20,10 +20,6 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
 
     const forwardedFor = request.headers.get("x-forwarded-for");
 
@@ -45,9 +41,22 @@ export async function POST(request: Request) {
       );
     }
 
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
+
     if (!user || !user.totpEnabled || !user.totpSecret) {
       return NextResponse.json(
         { error: "Invalid recovery credentials" },
+        { status: 401 },
+      );
+    }
+
+    // A malformed code can never verify; reject it the same way a wrong one
+    // would rather than pass free-form input into otplib.
+    if (!/^\d{6}$/.test(code)) {
+      return NextResponse.json(
+        { error: "Invalid recovery code" },
         { status: 401 },
       );
     }
