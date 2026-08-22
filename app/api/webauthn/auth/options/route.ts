@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { rpID } from "@/app/lib/webauthn/config";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { NextResponse } from "next/server";
@@ -6,14 +7,28 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const email = body.email?.trim().toLowerCase();
+
+    const email =
+      typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
 
     if (!email) {
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+    }
+
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+
+    const rateLimit = await checkAuthRateLimit("passkey", email, ip);
+
+    if (!rateLimit.allowed) {
       return NextResponse.json(
+        { error: "Too many attempts. Please try again later." },
         {
-          error: "Email is required",
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+          },
         },
-        { status: 400 },
       );
     }
 
@@ -42,15 +57,18 @@ export async function POST(request: Request) {
 
     const options = await generateAuthenticationOptions({
       rpID,
+
       allowCredentials: user.credentials.map((credential) => ({
         id: credential.credentialID,
         transports: credential.transports
           ? JSON.parse(credential.transports)
           : undefined,
       })),
-      userVerification: "preferred",
+
+      userVerification: "required",
     });
 
+    // Store challenge server-side.
     await prisma.challenge.create({
       data: {
         challenge: options.challenge,

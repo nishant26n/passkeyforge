@@ -1,5 +1,6 @@
 import { getCurrentUser } from "@/app/lib/auth/current-user";
 import { prisma } from "@/app/lib/prisma";
+import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { origin, rpID } from "@/app/lib/webauthn/config";
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { NextResponse } from "next/server";
@@ -10,6 +11,23 @@ export async function POST(request: Request) {
     const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+
+    const rateLimit = await checkAuthRateLimit("passkey-register", user.id, ip);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+          },
+        },
+      );
     }
 
     // `credential` is the raw attestation from the browser; `name` is the
@@ -40,11 +58,15 @@ export async function POST(request: Request) {
       expectedChallenge: challengeRecord.challenge,
       expectedOrigin: origin,
       expectedRPID: rpID,
-      requireUserVerification: false,
+      requireUserVerification: true,
     });
 
     // Challenges are single use, burn every one this user has either way
-    await prisma.challenge.deleteMany({ where: { userId: user.id } });
+    await prisma.challenge.delete({
+      where: {
+        id: challengeRecord.id,
+      },
+    });
 
     if (!verification.verified) {
       return NextResponse.json(
