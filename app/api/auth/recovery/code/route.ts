@@ -1,14 +1,8 @@
+import { hashRecoveryCode } from "@/app/lib/auth/recovery-code";
 import { createSession, setSessionCookie } from "@/app/lib/auth/session";
 import { prisma } from "@/app/lib/prisma";
 import { checkAuthRateLimit } from "@/app/lib/rate-limit";
-import { createHash } from "crypto";
 import { NextResponse } from "next/server";
-
-// Must stay byte-identical to the generate route: same input casing, same
-// digest encoding, or no stored hash will ever match
-function hashRecoveryCode(code: string) {
-  return createHash("sha256").update(code.trim().toUpperCase()).digest("hex");
-}
 
 export async function POST(request: Request) {
   try {
@@ -26,18 +20,6 @@ export async function POST(request: Request) {
           error: "Email and code are required",
         },
         { status: 400 },
-      );
-    }
-
-    const user = await prisma.user.findUnique({
-      where: {
-        email,
-      },
-    });
-    if (!user) {
-      return NextResponse.json(
-        { error: "Invalid recovery credentials" },
-        { status: 401 },
       );
     }
 
@@ -61,6 +43,18 @@ export async function POST(request: Request) {
       );
     }
 
+    const user = await prisma.user.findUnique({
+      where: {
+        email,
+      },
+    });
+    if (!user) {
+      return NextResponse.json(
+        { error: "Invalid recovery credentials" },
+        { status: 401 },
+      );
+    }
+
     const codeHash = hashRecoveryCode(code);
 
     const recoveryCode = await prisma.recoveryCode.findFirst({
@@ -68,9 +62,6 @@ export async function POST(request: Request) {
         userId: user.id,
         codeHash,
         usedAt: null,
-      },
-      orderBy: {
-        createdAt: "desc",
       },
     });
 
@@ -82,14 +73,22 @@ export async function POST(request: Request) {
     }
 
     // Consume the cde before creating the session
-    await prisma.recoveryCode.update({
+    const consumed = await prisma.recoveryCode.updateMany({
       where: {
         id: recoveryCode.id,
+        usedAt: null,
       },
       data: {
         usedAt: new Date(),
       },
     });
+
+    if (consumed.count !== 1) {
+      return NextResponse.json(
+        { error: "Invalid or already used recovery code" },
+        { status: 401 },
+      );
+    }
 
     // Create a new session for the user
     const session = await createSession(user.id);

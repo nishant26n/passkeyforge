@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider   = "prisma-client"
   output     = "../lib/generated/prisma"
@@ -16,49 +10,44 @@ datasource db {
 }
 
 model User {
-  id           String       @id @default(cuid())
-  email        String       @unique
-  passwordHash String
-
-  totpSecret String?
-  totpEnabled Boolean @default(false)
-
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  credentials  Credential[]
-  sessions     Session[]
-  challenges   Challenge[]
+  id            String         @id @default(cuid())
+  email         String         @unique
+  createdAt     DateTime       @default(now())
+  passwordHash  String
+  updatedAt     DateTime       @updatedAt
+  totpEnabled   Boolean        @default(false)
+  totpSecret    String?
+  challenges    Challenge[]
+  credentials   Credential[]
   recoveryCodes RecoveryCode[]
+  sessions      Session[]
 }
 
 model Credential {
-  id         String   @id @default(cuid())
-  credentialID String @unique
-  publicKey  String
-  counter    Int      @default(0)
-  transports String?
-  aaguid     String?
+  id           String    @id @default(cuid())
+  credentialID String    @unique
+  publicKey    String
+  counter      Int       @default(0)
+  transports   String?
+  aaguid       String?
+  createdAt    DateTime  @default(now())
+  lastUsedAt   DateTime?
+  userId       String
   name         String?
-  createdAt  DateTime @default(now())
-  lastUsedAt DateTime?
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model Session {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique
-  expiresAt DateTime
-  createdAt DateTime @default(now())
-  rotatedAt DateTime?
+  id         String    @id @default(cuid())
+  tokenHash  String    @unique
+  expiresAt  DateTime
+  createdAt  DateTime  @default(now())
   lastUsedAt DateTime?
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  rotatedAt  DateTime?
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
@@ -69,22 +58,20 @@ model Challenge {
   challenge String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-
-  userId String?
-  user   User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([expiresAt])
   @@index([userId])
 }
 
 model RecoveryCode {
-  id        String   @id @default(cuid())
-  codeHash  String   @unique
+  id        String    @id @default(cuid())
+  codeHash  String    @unique
   usedAt    DateTime?
-  createdAt DateTime @default(now())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }

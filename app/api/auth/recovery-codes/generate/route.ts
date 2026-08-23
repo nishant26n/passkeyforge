@@ -1,17 +1,12 @@
-import { createHash, randomBytes } from "crypto";
 import { getCurrentUser } from "@/app/lib/auth/current-user";
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import type { Prisma } from "@/lib/generated/prisma/client";
-
-function generateRecoveryCode() {
-  const value = randomBytes(6).toString("hex").toUpperCase();
-  return `${value.slice(0, 4)}-${value.slice(4, 8)}-${value.slice(8)}`;
-}
-
-function hashRecoveryCode(code: string) {
-  return createHash("sha256").update(code).digest("hex");
-}
+import {
+  generateRecoveryCode,
+  hashRecoveryCode,
+} from "@/app/lib/auth/recovery-code";
+import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 
 export async function POST() {
   try {
@@ -23,6 +18,24 @@ export async function POST() {
           error: "Unauthorized",
         },
         { status: 401 },
+      );
+    }
+
+    const rateLimit = await checkAuthRateLimit(
+      "recovery-codes-generate",
+      user.id,
+      "recovery",
+    );
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please try again later." },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+          },
+        },
       );
     }
 

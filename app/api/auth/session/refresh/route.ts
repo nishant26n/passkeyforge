@@ -1,19 +1,16 @@
 import {
   getSession,
   rotateSession,
+  SESSION_COOKIE_NAME,
   setSessionCookie,
 } from "@/app/lib/auth/session";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 export async function POST(request: Request) {
   try {
-    const cookieHeader = request.headers.get("cookie");
-
-    const token = cookieHeader
-      ?.split(";")
-      .map((cookie) => cookie.trim())
-      .find((cookie) => cookie.startsWith("session="))
-      ?.split("=")[1];
+    const cookieStore = await cookies();
+    const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
 
     if (!token) {
       return NextResponse.json(
