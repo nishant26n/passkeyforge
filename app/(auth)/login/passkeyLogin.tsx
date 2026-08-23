@@ -5,7 +5,9 @@ import {
   Alert,
   Card,
   CardHeader,
+  Divider,
   Field,
+  PasskeyButton,
   SubmitButton,
 } from "../_components/ui";
 import { startAuthentication } from "@simplewebauthn/browser";
@@ -20,6 +22,48 @@ const PasskeyLogin = () => {
   const [pending, setPending] = useState(false);
   const [formError, setFormError] = useState("");
 
+  /** Requests options, runs the ceremony, and verifies — shared by the
+   * email-first and usernameless flows, which only differ in the request
+   * body sent to /api/webauthn/auth/options. */
+  const authenticate = async (optionsBody: Record<string, unknown>) => {
+    const response = await fetch("/api/webauthn/auth/options", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(optionsBody),
+    });
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      setFormError(data.error ?? "Something went wrong. Try again.");
+      setPending(false);
+      return;
+    }
+
+    const authenticationResponse = await startAuthentication({
+      optionsJSON: data,
+    });
+
+    const verifyResponse = await fetch("/api/webauthn/auth/verify", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(authenticationResponse),
+    });
+
+    const verifyData = await verifyResponse.json().catch(() => ({}));
+
+    if (!verifyResponse.ok) {
+      setFormError(verifyData.error ?? "Passkey authentication failed.");
+      setPending(false);
+      return;
+    }
+
+    router.replace("/");
+    router.refresh();
+  };
+
   const handlePasskey = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
@@ -32,42 +76,19 @@ const PasskeyLogin = () => {
     setPending(true);
 
     try {
-      const response = await fetch("/api/webauthn/auth/options", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
+      await authenticate({ email });
+    } catch {
+      setFormError("Network error. Check your connection and try again.");
+      setPending(false);
+    }
+  };
 
-      const data = await response.json().catch(() => ({}));
+  const handleUsernameless = async () => {
+    setFormError("");
+    setPending(true);
 
-      if (!response.ok) {
-        setFormError(data.error ?? "Something went wrong. Try again.");
-        setPending(false);
-        return;
-      }
-
-      const authenticationResponse = await startAuthentication({
-        optionsJSON: data,
-      });
-
-      const verifyResponse = await fetch("/api/webauthn/auth/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(authenticationResponse),
-      });
-
-      const verifyData = await verifyResponse.json().catch(() => ({}));
-
-      if (!verifyResponse.ok) {
-        setFormError(verifyData.error ?? "Passkey authentication failed.");
-        setPending(false);
-        return;
-      }
-
-      router.replace("/");
-      router.refresh();
+    try {
+      await authenticate({ usernameless: true });
     } catch {
       setFormError("Network error. Check your connection and try again.");
       setPending(false);
@@ -98,6 +119,14 @@ const PasskeyLogin = () => {
 
         <SubmitButton pending={pending}>Login with Passkey</SubmitButton>
       </form>
+
+      <div className="my-6">
+        <Divider>or</Divider>
+      </div>
+
+      <PasskeyButton pending={pending} onClick={handleUsernameless}>
+        Sign in without typing your email
+      </PasskeyButton>
     </Card>
   );
 };

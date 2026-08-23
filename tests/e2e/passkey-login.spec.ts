@@ -106,6 +106,40 @@ test.describe("passkey login", () => {
     expect(await countSessionsForUser(user.id)).toBe(1);
   });
 
+  test("offers a usernameless sign-in option", async ({ page }) => {
+    await page.goto("/login/passkey");
+
+    await expect(
+      page.getByRole("button", { name: "Sign in without typing your email" }),
+    ).toBeVisible();
+  });
+
+  test("user can sign in without typing an email, via a discoverable credential", async ({
+    page,
+    createUser,
+  }) => {
+    const user = await createUser();
+    await loginViaUi(page, user);
+    await addVirtualAuthenticator(page);
+    await registerPasskeyViaUi(page, "Usernameless key");
+    await logoutViaUi(page);
+
+    await page.goto("/login/passkey");
+    await page
+      .getByRole("button", { name: "Sign in without typing your email" })
+      .click();
+
+    await expect(
+      page.getByRole("heading", { name: "You're signed in" }),
+    ).toBeVisible();
+    await expect(page).toHaveURL("/");
+    await expect(page.getByText(user.email)).toBeVisible();
+
+    const cookie = await readSessionCookie(page);
+    expect(cookie).not.toBeNull();
+    expect(await countSessionsForUser(user.id)).toBe(1);
+  });
+
   test("successful passkey sign-in records the credential as used", async ({
     page,
     createUser,
