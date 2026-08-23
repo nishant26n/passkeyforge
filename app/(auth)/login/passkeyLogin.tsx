@@ -14,12 +14,15 @@ import { startAuthentication } from "@simplewebauthn/browser";
 import { useRouter } from "next/navigation";
 
 type Errors = { email?: string };
+type PendingAction = "email" | "usernameless" | null;
 
 const PasskeyLogin = () => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<Errors>({});
-  const [pending, setPending] = useState(false);
+  // Tracks which of the two buttons triggered the ceremony, so only that
+  // one shows a spinner — a shared boolean would spin both at once.
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [formError, setFormError] = useState("");
 
   /** Requests options, runs the ceremony, and verifies — shared by the
@@ -36,7 +39,7 @@ const PasskeyLogin = () => {
 
     if (!response.ok) {
       setFormError(data.error ?? "Something went wrong. Try again.");
-      setPending(false);
+      setPendingAction(null);
       return;
     }
 
@@ -56,7 +59,7 @@ const PasskeyLogin = () => {
 
     if (!verifyResponse.ok) {
       setFormError(verifyData.error ?? "Passkey authentication failed.");
-      setPending(false);
+      setPendingAction(null);
       return;
     }
 
@@ -73,25 +76,25 @@ const PasskeyLogin = () => {
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    setPending(true);
+    setPendingAction("email");
 
     try {
       await authenticate({ email });
     } catch {
       setFormError("Network error. Check your connection and try again.");
-      setPending(false);
+      setPendingAction(null);
     }
   };
 
   const handleUsernameless = async () => {
     setFormError("");
-    setPending(true);
+    setPendingAction("usernameless");
 
     try {
       await authenticate({ usernameless: true });
     } catch {
       setFormError("Network error. Check your connection and try again.");
-      setPending(false);
+      setPendingAction(null);
     }
   };
 
@@ -113,18 +116,27 @@ const PasskeyLogin = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
-          disabled={pending}
+          disabled={pendingAction !== null}
           required
         />
 
-        <SubmitButton pending={pending}>Login with Passkey</SubmitButton>
+        <SubmitButton
+          pending={pendingAction === "email"}
+          disabled={pendingAction !== null}
+        >
+          Login with Passkey
+        </SubmitButton>
       </form>
 
       <div className="my-6">
         <Divider>or</Divider>
       </div>
 
-      <PasskeyButton pending={pending} onClick={handleUsernameless}>
+      <PasskeyButton
+        pending={pendingAction === "usernameless"}
+        disabled={pendingAction !== null}
+        onClick={handleUsernameless}
+      >
         Sign in without typing your email
       </PasskeyButton>
     </Card>
