@@ -7,10 +7,12 @@ import {
   startRegistration,
 } from "@simplewebauthn/browser";
 import { Alert, Field, PasskeyButton } from "@/app/(auth)/_components/ui";
+import { describeAaguid } from "@/app/lib/webauthn/aaguid";
 
 export type PasskeySummary = {
   id: string;
   name: string | null;
+  aaguid: string | null;
   // Preformatted on the server for the first paint: formatting a Date during
   // render would hydrate with the browser's locale and timezone instead of the
   // server's. Refreshes reuse the same format (see `dateFormat` below)
@@ -152,12 +154,12 @@ export function PasskeyManager({
             >
               <div className="min-w-0">
                 <p className="truncate text-sm text-zinc-800 dark:text-zinc-200">
-                  {passkey.name ?? describeDevice(passkey.transports)}
+                  {passkey.name ??
+                    describeAaguid(passkey.aaguid) ??
+                    describeDevice(passkey.transports)}
                 </p>
                 <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  {passkey.name && passkey.transports.length > 0
-                    ? `${passkey.transports.join(", ")} · `
-                    : ""}
+                  {deviceSubtitle(passkey)}
                   Added {passkey.addedAt}
                   {passkey.lastUsedAt
                     ? ` · Last used ${passkey.lastUsedAt}`
@@ -236,16 +238,35 @@ const dateFormat = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
-// Fallback label for passkeys saved without a name (including every one
-// registered before the name field existed)
+// Fallback label for passkeys saved without a name and with an
+// unrecognized (or absent) AAGUID
 function describeDevice(transports: string[]) {
   return transports.length > 0 ? transports.join(", ") : "Passkey";
+}
+
+// The primary line already shows the AAGUID-derived name when there's no
+// custom name, so the subtitle only repeats it alongside a custom name —
+// otherwise it would just say "1Password" twice.
+function deviceSubtitle(passkey: PasskeySummary) {
+  const parts: string[] = [];
+
+  if (passkey.name) {
+    const deviceLabel = describeAaguid(passkey.aaguid);
+    if (deviceLabel) parts.push(deviceLabel);
+  }
+
+  if (passkey.transports.length > 0) {
+    parts.push(passkey.transports.join(", "));
+  }
+
+  return parts.length > 0 ? `${parts.join(" · ")} · ` : "";
 }
 
 function toSummary(credential: CredentialResponse): PasskeySummary {
   return {
     id: credential.id,
     name: credential.name,
+    aaguid: credential.aaguid,
     addedAt: dateFormat.format(new Date(credential.createdAt)),
     lastUsedAt: credential.lastUsedAt
       ? dateFormat.format(new Date(credential.lastUsedAt))

@@ -27,6 +27,7 @@ export default async function Home() {
   const passkeys: PasskeySummary[] = credentials.map((credential) => ({
     id: credential.id,
     name: credential.name,
+    aaguid: credential.aaguid,
     addedAt: dateFormat.format(credential.createdAt),
     lastUsedAt: credential.lastUsedAt
       ? dateFormat.format(credential.lastUsedAt)
