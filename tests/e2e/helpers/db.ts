@@ -145,31 +145,3 @@ export async function deleteUsersByEmails(emails: string[]) {
 
   await query('DELETE FROM "User" WHERE email = ANY($1::text[])', [safe]);
 }
-
-/** Mirrors hashAuthorizationCode/hashAccessToken in app/lib/oauth/code.ts — both plain sha256 hex. */
-function hashOAuthSecret(value: string) {
-  return createHash("sha256").update(value).digest("hex");
-}
-
-/** Backdates an authorization code's expiry so a fresh code can be tested as expired. */
-export async function expireOAuthAuthorizationCode(code: string) {
-  await query(
-    'UPDATE "OAuthAuthorizationCode" SET "expiresAt" = NOW() - INTERVAL \'1 minute\' WHERE "codeHash" = $1',
-    [hashOAuthSecret(code)],
-  );
-}
-
-/** Backdates an access token's expiry so a fresh token can be tested as expired. */
-export async function expireOAuthAccessToken(token: string) {
-  await query(
-    'UPDATE "OAuthAccessToken" SET "expiresAt" = NOW() - INTERVAL \'1 hour\' WHERE "tokenHash" = $1',
-    [hashOAuthSecret(token)],
-  );
-}
-
-/** Deletes OAuth clients this suite created; authorization codes/tokens cascade with them. */
-export async function deleteOAuthClientsByNames(names: string[]) {
-  if (names.length === 0) return;
-
-  await query('DELETE FROM "OAuthClient" WHERE name = ANY($1::text[])', [names]);
-}
