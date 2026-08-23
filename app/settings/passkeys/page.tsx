@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/app/lib/auth/current-user";
 import { prisma } from "@/app/lib/prisma";
 import { TotpSetup } from "./totp-setup";
 import { RecoveryCodes } from "./recovery-code";
+
+export const metadata: Metadata = {
+  title: "Security settings · Passkey Forge",
+  description: "Manage two-factor authentication and recovery codes.",
+};
 
 // Formatted on the server and passed down as a string: rendering a Date in the
 // client would format it in the viewer's locale and break hydration

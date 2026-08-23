@@ -97,7 +97,7 @@ export function LoginForm({ registered }: { registered?: boolean }) {
           required
           hint={
             <Link
-              href="/forgot-password"
+              href="/recovery"
               className="text-xs text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
             >
               Forgot password?

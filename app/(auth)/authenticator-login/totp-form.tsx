@@ -125,8 +125,14 @@ export function TOTPForm() {
       </form>
 
       <p className="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
-        Lost access to your authenticator app? Contact support to regain access
-        to your account.
+        Lost access to your authenticator app?{" "}
+        <Link
+          href="/recovery"
+          className="font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
+        >
+          Use a recovery code
+        </Link>
+        .
       </p>
 
       <div className="mt-6 w-full text-center">

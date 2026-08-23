@@ -6,9 +6,7 @@ import {
   Alert,
   Card,
   CardHeader,
-  Divider,
   Field,
-  PasskeyButton,
   PasswordField,
   SubmitButton,
 } from "../_components/ui";
@@ -158,12 +156,6 @@ export function RegisterForm() {
           .
         </p>
       </form>
-
-      <div className="my-6">
-        <Divider>or</Divider>
-      </div>
-
-      <PasskeyButton>Sign up with a passkey</PasskeyButton>
     </Card>
   );
 }
