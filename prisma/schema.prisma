@@ -21,6 +21,8 @@ model User {
   credentials   Credential[]
   recoveryCodes RecoveryCode[]
   sessions      Session[]
+  oauthAuthorizationCodes OAuthAuthorizationCode[]
+  accessTokens OAuthAccessToken[]
 }
 
 model Credential {
@@ -74,4 +76,57 @@ model RecoveryCode {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model OAuthClient {
+  id               String   @id @default(cuid())
+  clientId         String   @unique
+  clientSecretHash String
+  name             String
+  redirectUris     String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  authorizationCodes OAuthAuthorizationCode[]
+  oauthAccessTokens OAuthAccessToken[]
+  
+  @@index([createdAt])
+}
+
+model OAuthAuthorizationCode {
+  id                  String   @id @default(cuid())
+  codeHash            String   @unique
+  clientId             String
+  userId               String
+  redirectUri          String
+  scope                String?
+  codeChallenge        String?
+  codeChallengeMethod  String?
+  expiresAt            DateTime
+  usedAt               DateTime?
+  createdAt            DateTime @default(now())
+
+  client OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model OAuthAccessToken {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  clientId   String
+  userId     String
+  scope      String?
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  revokedAt  DateTime?
+
+  client OAuthClient @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([clientId])
+  @@index([userId])
+  @@index([expiresAt])
 }
