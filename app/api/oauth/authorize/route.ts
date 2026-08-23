@@ -3,6 +3,7 @@ import {
   generateAuthorizationCode,
   hashAuthorizationCode,
 } from "@/app/lib/oauth/code";
+import { isValidScope } from "@/app/lib/oauth/scope";
 import { prisma } from "@/app/lib/prisma";
 import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { NextResponse } from "next/server";
@@ -129,7 +130,20 @@ export async function GET(request: Request) {
     }
 
     // --------------------------------------------------
-    // 6. Make sure user is authenticated
+    // 6. Validate scope
+    // --------------------------------------------------
+
+    if (!isValidScope(scope)) {
+      return NextResponse.json(
+        {
+          error: "invalid_scope",
+        },
+        { status: 400 },
+      );
+    }
+
+    // --------------------------------------------------
+    // 7. Make sure user is authenticated
     // --------------------------------------------------
 
     const user = await getCurrentUser();
@@ -144,7 +158,7 @@ export async function GET(request: Request) {
     }
 
     // --------------------------------------------------
-    // 7. Generate authorization code
+    // 8. Generate authorization code
     // --------------------------------------------------
 
     const code = generateAuthorizationCode();
@@ -166,7 +180,7 @@ export async function GET(request: Request) {
     });
 
     // --------------------------------------------------
-    // 8. Redirect back to client
+    // 9. Redirect back to client
     // --------------------------------------------------
 
     const callbackUrl = new URL(redirectUri);

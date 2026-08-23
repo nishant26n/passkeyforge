@@ -121,6 +121,37 @@ export async function requestAuthorizationCode(
   return { code: code!, state: returnedState! };
 }
 
+/**
+ * Runs a full authorize -> token exchange for a given scope and returns the
+ * resulting access token. Used by resource-server scope tests that only
+ * care about the token they end up with.
+ */
+export async function getAccessTokenWithScope(
+  request: APIRequestContext,
+  client: { clientId: string },
+  scope: string,
+) {
+  const { codeVerifier, codeChallenge } = generatePkcePair();
+
+  const { code } = await requestAuthorizationCode(request, {
+    clientId: client.clientId,
+    redirectUri: OAUTH_TEST_REDIRECT_URI,
+    codeChallenge,
+    scope,
+  });
+
+  const tokenResponse = await exchangeCodeForToken(request, {
+    code,
+    redirectUri: OAUTH_TEST_REDIRECT_URI,
+    clientId: client.clientId,
+    codeVerifier,
+  });
+  expect(tokenResponse.status(), "token exchange should succeed").toBe(200);
+
+  const body = await tokenResponse.json();
+  return body.access_token as string;
+}
+
 /** Exchanges an authorization code for an access token via the real token endpoint. */
 export async function exchangeCodeForToken(
   request: APIRequestContext,

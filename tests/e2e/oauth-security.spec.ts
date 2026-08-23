@@ -4,6 +4,7 @@ import {
   OAUTH_TEST_REDIRECT_URI,
   exchangeCodeForToken,
   generatePkcePair,
+  getAccessTokenWithScope,
   registerOAuthClient,
   requestAuthorizationCode,
 } from "./helpers/oauth";
@@ -114,6 +115,33 @@ test.describe("OAuth authorize security", () => {
 
     expect(response.status()).toBe(400);
     expect((await response.json()).error).toBe("invalid_request");
+  });
+
+  test("rejects a scope outside the allowed set", async ({
+    request,
+    createUser,
+    trackOAuthClient,
+  }) => {
+    const user = await createUser({ prefix: "oauth-authz" });
+    await loginViaApi(request, user);
+    const client = await registerOAuthClient(request);
+    trackOAuthClient(client.name);
+
+    const response = await request.get("/api/oauth/authorize", {
+      params: {
+        response_type: "code",
+        client_id: client.clientId,
+        redirect_uri: OAUTH_TEST_REDIRECT_URI,
+        code_challenge: generatePkcePair().codeChallenge,
+        code_challenge_method: "S256",
+        scope: "openid admin",
+        state: "state",
+      },
+      maxRedirects: 0,
+    });
+
+    expect(response.status()).toBe(400);
+    expect(await response.json()).toEqual({ error: "invalid_scope" });
   });
 
   test("is rate limited per client_id, with Retry-After on the blocked response", async ({
@@ -326,5 +354,150 @@ test.describe("OAuth access token security", () => {
 
     expect(response.status()).toBe(401);
     expect(await response.json()).toEqual({ error: "invalid_token" });
+  });
+});
+
+test.describe("OAuth resource server (/api/oauth/me)", () => {
+  test("rejects a missing bearer token", async ({ request }) => {
+    const response = await request.get("/api/oauth/me");
+
+    expect(response.status()).toBe(401);
+    expect(await response.json()).toEqual({ error: "invalid_token" });
+  });
+
+  test("rejects an invalid/malformed bearer token", async ({ request }) => {
+    const response = await request.get("/api/oauth/me", {
+      headers: { Authorization: "Bearer not-a-real-token" },
+    });
+
+    expect(response.status()).toBe(401);
+    expect(await response.json()).toEqual({ error: "invalid_token" });
+  });
+
+  test("rejects an expired access token", async ({
+    request,
+    createUser,
+    trackOAuthClient,
+  }) => {
+    const user = await createUser({ prefix: "oauth-me" });
+    await loginViaApi(request, user);
+    const client = await registerOAuthClient(request);
+    trackOAuthClient(client.name);
+
+    const accessToken = await getAccessTokenWithScope(
+      request,
+      client,
+      "openid email",
+    );
+    await expireOAuthAccessToken(accessToken);
+
+    const response = await request.get("/api/oauth/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    expect(response.status()).toBe(401);
+    expect(await response.json()).toEqual({ error: "invalid_token" });
+  });
+
+  test("rejects a revoked access token", async ({
+    request,
+    createUser,
+    trackOAuthClient,
+  }) => {
+    const user = await createUser({ prefix: "oauth-me" });
+    await loginViaApi(request, user);
+    const client = await registerOAuthClient(request);
+    trackOAuthClient(client.name);
+
+    const accessToken = await getAccessTokenWithScope(
+      request,
+      client,
+      "openid email",
+    );
+
+    const revoked = await request.post("/api/oauth/revoke", {
+      data: { token: accessToken },
+    });
+    expect(revoked.status()).toBe(200);
+
+    const response = await request.get("/api/oauth/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    expect(response.status()).toBe(401);
+    expect(await response.json()).toEqual({ error: "invalid_token" });
+  });
+
+  test("rejects a valid token that was never granted the openid scope", async ({
+    request,
+    createUser,
+    trackOAuthClient,
+  }) => {
+    const user = await createUser({ prefix: "oauth-me" });
+    await loginViaApi(request, user);
+    const client = await registerOAuthClient(request);
+    trackOAuthClient(client.name);
+
+    const accessToken = await getAccessTokenWithScope(request, client, "profile");
+
+    const response = await request.get("/api/oauth/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    expect(response.status()).toBe(403);
+    expect(await response.json()).toEqual({
+      error: "insufficient_scope",
+      error_description: "This endpoint requires the openid scope",
+    });
+  });
+
+  test("returns only safe fields for a valid token with the openid and email scopes", async ({
+    request,
+    createUser,
+    trackOAuthClient,
+  }) => {
+    const user = await createUser({ prefix: "oauth-me" });
+    await loginViaApi(request, user);
+    const client = await registerOAuthClient(request);
+    trackOAuthClient(client.name);
+
+    const accessToken = await getAccessTokenWithScope(
+      request,
+      client,
+      "openid email",
+    );
+
+    const response = await request.get("/api/oauth/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual({
+      sub: user.id,
+      email: user.email,
+      scope: "openid email",
+    });
+  });
+
+  test("omits the email claim when only the openid scope was granted", async ({
+    request,
+    createUser,
+    trackOAuthClient,
+  }) => {
+    const user = await createUser({ prefix: "oauth-me" });
+    await loginViaApi(request, user);
+    const client = await registerOAuthClient(request);
+    trackOAuthClient(client.name);
+
+    const accessToken = await getAccessTokenWithScope(request, client, "openid");
+
+    const response = await request.get("/api/oauth/me", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
+
+    expect(response.status()).toBe(200);
+    const body = await response.json();
+    expect(body).toEqual({ sub: user.id, scope: "openid" });
   });
 });

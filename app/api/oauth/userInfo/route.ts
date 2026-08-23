@@ -1,62 +1,11 @@
-import { prisma } from "@/app/lib/prisma";
-import { hashAccessToken } from "@/app/lib/oauth/code";
+import { validateAccessToken } from "@/app/lib/oauth/token";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
   try {
-    const authorization = request.headers.get("authorization");
+    const result = await validateAccessToken(request);
 
-    if (!authorization?.startsWith("Bearer ")) {
-      return NextResponse.json(
-        {
-          error: "invalid_token",
-        },
-        { status: 401 },
-      );
-    }
-
-    const accessToken = authorization.slice("Bearer ".length).trim();
-
-    if (!accessToken) {
-      return NextResponse.json(
-        {
-          error: "invalid_token",
-        },
-        { status: 401 },
-      );
-    }
-
-    const tokenHash = hashAccessToken(accessToken);
-
-    const token = await prisma.oAuthAccessToken.findUnique({
-      where: {
-        tokenHash,
-      },
-      include: {
-        user: true,
-        client: true,
-      },
-    });
-
-    if (!token) {
-      return NextResponse.json(
-        {
-          error: "invalid_token",
-        },
-        { status: 401 },
-      );
-    }
-
-    if (token.revokedAt) {
-      return NextResponse.json(
-        {
-          error: "invalid_token",
-        },
-        { status: 401 },
-      );
-    }
-
-    if (token.expiresAt <= new Date()) {
+    if (!result.ok) {
       return NextResponse.json(
         {
           error: "invalid_token",
@@ -66,8 +15,8 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
-      sub: token.user.id,
-      email: token.user.email,
+      sub: result.data.user.id,
+      email: result.data.user.email,
     });
   } catch (error) {
     console.error("OAuth userinfo error:", error);
