@@ -4,7 +4,12 @@ import {
   expect,
   type APIRequestContext,
 } from "@playwright/test";
-import { closePool, deleteUsersByEmails, getUserByEmail } from "./db";
+import {
+  closePool,
+  deleteOAuthClientsByNames,
+  deleteUsersByEmails,
+  getUserByEmail,
+} from "./db";
 import {
   TEST_PASSWORD,
   uniqueClientIp,
@@ -28,6 +33,8 @@ type Fixtures = {
   clientIp: string;
   /** Marks an address for deletion once the test finishes. */
   trackEmail: (email: string) => void;
+  /** Marks an OAuth client name for deletion once the test finishes. */
+  trackOAuthClient: (name: string) => void;
   /** Registers a user through the real API and deletes it after the test. */
   createUser: CreateUser;
   /** A second, independently cookied API context — for cross-user tests. */
@@ -62,6 +69,14 @@ export const test = base.extend<Fixtures, WorkerFixtures>({
       created.push(email);
     });
     await deleteUsersByEmails(created);
+  },
+
+  trackOAuthClient: async ({}, use) => {
+    const created: string[] = [];
+    await use((name: string) => {
+      created.push(name);
+    });
+    await deleteOAuthClientsByNames(created);
   },
 
   createUser: async ({ request, trackEmail }, use) => {
