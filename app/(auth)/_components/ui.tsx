@@ -125,15 +125,17 @@ export function Alert({
 
 export function SubmitButton({
   pending,
+  disabled,
   children,
 }: {
   pending?: boolean;
+  disabled?: boolean;
   children: React.ReactNode;
 }) {
   return (
     <button
       type="submit"
-      disabled={pending}
+      disabled={disabled ?? pending}
       className="flex h-11 w-full items-center justify-center rounded-lg bg-zinc-900 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:outline-zinc-100"
     >
       {pending ? <Spinner /> : children}

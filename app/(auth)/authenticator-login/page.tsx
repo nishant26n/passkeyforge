@@ -5,9 +5,9 @@ import { getCurrentUser } from "@/app/lib/auth/current-user";
 import { TOTPForm } from "./totp-form";
 
 export const metadata: Metadata = {
-  title: "Recover your account · Passkey Forge",
+  title: "Login with authenticator code · Passkey Forge",
   description:
-    "Sign in with an authenticator code when a passkey isn't available.",
+    "Sign in with a code from your authenticator app when a passkey isn't available.",
 };
 
 export default async function AuthenticatorLoginPage() {
