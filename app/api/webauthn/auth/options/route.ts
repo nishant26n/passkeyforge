@@ -10,13 +10,52 @@ export async function POST(request: Request) {
 
     const email =
       typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-
-    if (!email) {
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
-    }
+    const usernameless = body.usernameless === true;
 
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+
+    if (!email) {
+      if (!usernameless) {
+        return NextResponse.json(
+          { error: "Email is required" },
+          { status: 400 },
+        );
+      }
+
+      // Usernameless / discoverable-credential flow: no email to look a user
+      // up by, so no allowCredentials list either — the authenticator offers
+      // its own resident credentials and the assertion's credential ID is
+      // what identifies the account, in /api/webauthn/auth/verify.
+      const rateLimit = await checkAuthRateLimit("passkey", ip, ip);
+
+      if (!rateLimit.allowed) {
+        return NextResponse.json(
+          { error: "Too many attempts. Please try again later." },
+          {
+            status: 429,
+            headers: {
+              "Retry-After": "60",
+            },
+          },
+        );
+      }
+
+      const options = await generateAuthenticationOptions({
+        rpID,
+        userVerification: "required",
+      });
+
+      await prisma.challenge.create({
+        data: {
+          challenge: options.challenge,
+          userId: null,
+          expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+        },
+      });
+
+      return NextResponse.json(options);
+    }
 
     const rateLimit = await checkAuthRateLimit("passkey", email, ip);
 
