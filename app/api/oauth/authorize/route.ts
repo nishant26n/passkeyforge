@@ -4,6 +4,7 @@ import {
   hashAuthorizationCode,
 } from "@/app/lib/oauth/code";
 import { prisma } from "@/app/lib/prisma";
+import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
@@ -36,7 +37,30 @@ export async function GET(request: Request) {
     }
 
     // --------------------------------------------------
-    // 2. Find OAuth client
+    // 2. Rate limit by client and IP
+    // --------------------------------------------------
+
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+
+    const rateLimit = await checkAuthRateLimit("oauth-authorize", clientId, ip);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "too_many_requests",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+          },
+        },
+      );
+    }
+
+    // --------------------------------------------------
+    // 3. Find OAuth client
     // --------------------------------------------------
 
     const client = await prisma.oAuthClient.findUnique({
@@ -55,7 +79,7 @@ export async function GET(request: Request) {
     }
 
     // --------------------------------------------------
-    // 3. Validate redirect URI
+    // 4. Validate redirect URI
     // --------------------------------------------------
 
     let registeredRedirectUris: string[];
@@ -81,7 +105,7 @@ export async function GET(request: Request) {
     }
 
     // --------------------------------------------------
-    // 4. Validate PKCE
+    // 5. Validate PKCE
     // --------------------------------------------------
 
     if (!codeChallenge || !codeChallengeMethod) {
@@ -105,7 +129,7 @@ export async function GET(request: Request) {
     }
 
     // --------------------------------------------------
-    // 5. Make sure user is authenticated
+    // 6. Make sure user is authenticated
     // --------------------------------------------------
 
     const user = await getCurrentUser();
@@ -120,7 +144,7 @@ export async function GET(request: Request) {
     }
 
     // --------------------------------------------------
-    // 6. Generate authorization code
+    // 7. Generate authorization code
     // --------------------------------------------------
 
     const code = generateAuthorizationCode();
@@ -142,7 +166,7 @@ export async function GET(request: Request) {
     });
 
     // --------------------------------------------------
-    // 7. Redirect back to client
+    // 8. Redirect back to client
     // --------------------------------------------------
 
     const callbackUrl = new URL(redirectUri);

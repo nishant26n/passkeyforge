@@ -4,6 +4,7 @@ import {
   hashAccessToken,
   hashAuthorizationCode,
 } from "@/app/lib/oauth/code";
+import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { NextResponse } from "next/server";
 import crypto from "node:crypto";
 
@@ -61,7 +62,30 @@ export async function POST(request: Request) {
     }
 
     // --------------------------------------------------
-    // 3. Find OAuth client
+    // 3. Rate limit by client and IP
+    // --------------------------------------------------
+
+    const forwardedFor = request.headers.get("x-forwarded-for");
+    const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
+
+    const rateLimit = await checkAuthRateLimit("oauth-token", clientId, ip);
+
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        {
+          error: "too_many_requests",
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": "60",
+          },
+        },
+      );
+    }
+
+    // --------------------------------------------------
+    // 4. Find OAuth client
     // --------------------------------------------------
 
     const client = await prisma.oAuthClient.findUnique({
@@ -80,7 +104,7 @@ export async function POST(request: Request) {
     }
 
     // --------------------------------------------------
-    // 4. Validate redirect URI
+    // 5. Validate redirect URI
     // --------------------------------------------------
 
     let registeredRedirectUris: string[];
@@ -106,7 +130,7 @@ export async function POST(request: Request) {
     }
 
     // --------------------------------------------------
-    // 5. Find authorization code
+    // 6. Find authorization code
     // --------------------------------------------------
 
     const codeHash = hashAuthorizationCode(code);
@@ -127,7 +151,7 @@ export async function POST(request: Request) {
     }
 
     // --------------------------------------------------
-    // 6. Validate authorization code
+    // 7. Validate authorization code
     // --------------------------------------------------
 
     if (authorizationCode.clientId !== client.id) {
@@ -167,7 +191,7 @@ export async function POST(request: Request) {
     }
 
     // --------------------------------------------------
-    // 7. Verify PKCE
+    // 8. Verify PKCE
     // --------------------------------------------------
 
     if (
@@ -187,11 +211,15 @@ export async function POST(request: Request) {
       .update(codeVerifier)
       .digest("base64url");
 
+    const calculatedChallengeBuffer = Buffer.from(calculatedChallenge);
+    const storedChallengeBuffer = Buffer.from(authorizationCode.codeChallenge);
+
+    // timingSafeEqual throws on mismatched buffer lengths, so an
+    // attacker-controlled length would surface as a 500 instead of the
+    // invalid_grant this route otherwise returns for a mismatch.
     if (
-      !crypto.timingSafeEqual(
-        Buffer.from(calculatedChallenge),
-        Buffer.from(authorizationCode.codeChallenge),
-      )
+      calculatedChallengeBuffer.length !== storedChallengeBuffer.length ||
+      !crypto.timingSafeEqual(calculatedChallengeBuffer, storedChallengeBuffer)
     ) {
       return NextResponse.json(
         {
@@ -202,7 +230,7 @@ export async function POST(request: Request) {
     }
 
     // --------------------------------------------------
-    // 8. Consume authorization code
+    // 9. Consume authorization code
     // --------------------------------------------------
 
     const consumed = await prisma.oAuthAuthorizationCode.updateMany({
@@ -228,7 +256,7 @@ export async function POST(request: Request) {
     }
 
     // --------------------------------------------------
-    // 9. Generate access token
+    // 10. Generate access token
     // --------------------------------------------------
 
     const accessToken = generateAccessToken();
@@ -247,7 +275,7 @@ export async function POST(request: Request) {
     });
 
     // --------------------------------------------------
-    // 10. Return OAuth token response
+    // 11. Return OAuth token response
     // --------------------------------------------------
 
     return NextResponse.json({
