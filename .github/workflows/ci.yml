@@ -13,11 +13,19 @@ concurrency:
 
 env:
   NODE_VERSION: "20"
+  # prisma.config.ts uses prisma/config's env() helper, which throws just
+  # from loading the config if DATABASE_URL is unset — before `prisma
+  # generate` even runs. generate() only reads schema.prisma and never
+  # connects, so a syntactically-valid placeholder satisfies that check
+  # without needing the real secret in jobs that don't touch the database.
+  PLACEHOLDER_DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
 
 jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ env.PLACEHOLDER_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,14 +33,15 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
       - run: npm ci
-      # eslint's type-aware rules need the generated Prisma client on disk;
-      # this only reads schema.prisma, no DATABASE_URL required.
+      # eslint's type-aware rules need the generated Prisma client on disk.
       - run: npx prisma generate
       - run: npm run lint
 
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ env.PLACEHOLDER_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
