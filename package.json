@@ -27,7 +27,7 @@
     "qrcode.react": "^4.2.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "use-passkey": "^0.1.0",
+    "use-passkey": "^0.1.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {
