@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { verify } from "otplib";
+import z from "zod";
 
 import { getCurrentUser } from "@/app/lib/auth/current-user";
 import { prisma } from "@/app/lib/prisma";
 import { checkAuthRateLimit } from "@/app/lib/rate-limit";
+
+const totpVerifySchema = z.object({
+  code: z.string().trim().regex(/^\d{6}$/),
+});
 
 export async function POST(request: Request) {
   try {
@@ -16,15 +21,16 @@ export async function POST(request: Request) {
 
     // 2. Read the code from the request
     const body = await request.json();
+    const parsed = totpVerifySchema.safeParse(body);
 
-    const code = String(body.code ?? "").trim();
-
-    if (!/^\d{6}$/.test(code)) {
+    if (!parsed.success) {
       return NextResponse.json(
         { error: "Enter a valid 6-digit code" },
         { status: 400 },
       );
     }
+
+    const { code } = parsed.data;
 
     // 3. Make sure TOTP setup was started
     if (!user.totpSecret) {

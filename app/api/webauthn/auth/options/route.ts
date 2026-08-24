@@ -3,14 +3,31 @@ import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { rpID } from "@/app/lib/webauthn/config";
 import { generateAuthenticationOptions } from "@simplewebauthn/server";
 import { NextResponse } from "next/server";
+import z from "zod";
+
+// email/usernameless are both optional — which combination was sent decides
+// which of the two branches below runs, so shape is validated here but the
+// choice of branch stays in plain control flow rather than the schema.
+const authOptionsSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .transform((email) => email.toLowerCase())
+    .optional(),
+  usernameless: z.boolean().optional(),
+});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const parsed = authOptionsSchema.safeParse(body);
 
-    const email =
-      typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
-    const usernameless = body.usernameless === true;
+    if (!parsed.success) {
+      return NextResponse.json({ error: "Invalid request" }, { status: 400 });
+    }
+
+    const email = parsed.data.email ?? "";
+    const usernameless = parsed.data.usernameless === true;
 
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor?.split(",")[0]?.trim() ?? "unknown";
