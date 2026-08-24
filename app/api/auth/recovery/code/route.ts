@@ -3,18 +3,23 @@ import { createSession, setSessionCookie } from "@/app/lib/auth/session";
 import { prisma } from "@/app/lib/prisma";
 import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { NextResponse } from "next/server";
+import z from "zod";
+
+const recoveryCodeSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .email()
+    .transform((email) => email.toLowerCase()),
+  code: z.string().trim().min(1),
+});
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const result = recoveryCodeSchema.safeParse(body);
 
-    const email = String(body.email ?? "")
-      .trim()
-      .toLowerCase();
-
-    const code = String(body.code ?? "").trim();
-
-    if (!email || !code) {
+    if (!result.success) {
       return NextResponse.json(
         {
           error: "Email and code are required",
@@ -22,6 +27,8 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+
+    const { email, code } = result.data;
 
     const forwardedFor = request.headers.get("x-forwarded-for");
 
