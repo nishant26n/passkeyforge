@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   createSession,
@@ -45,10 +46,7 @@ describe("session authentication", () => {
 
     const token = crypto.randomUUID();
 
-    const tokenHash = require("node:crypto")
-      .createHash("sha256")
-      .update(token)
-      .digest("hex");
+    const tokenHash = createHash("sha256").update(token).digest("hex");
 
     await prisma.session.create({
       data: {

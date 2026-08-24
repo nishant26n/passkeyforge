@@ -4,6 +4,16 @@ import { checkAuthRateLimit } from "@/app/lib/rate-limit";
 import { origin, rpID } from "@/app/lib/webauthn/config";
 import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { NextResponse } from "next/server";
+import z from "zod";
+
+const registerVerifySchema = z.object({
+  // The attestation itself is the WebAuthn RegistrationResponseJSON —
+  // verifyRegistrationResponse() below does the real structural and
+  // cryptographic validation; this just makes sure something object-shaped
+  // was actually sent.
+  credential: z.record(z.string(), z.unknown()),
+  name: z.string().optional(),
+});
 
 export async function POST(request: Request) {
   try {
@@ -32,10 +42,26 @@ export async function POST(request: Request) {
 
     // `credential` is the raw attestation from the browser; `name` is the
     // optional label the user typed before starting the ceremony
-    const { credential: attestation, name } = await request.json();
+    const body = await request.json();
+    const parsed = registerVerifySchema.safeParse(body);
 
-    const trimmedName =
-      typeof name === "string" && name.trim() ? name.trim().slice(0, 60) : null;
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid registration response" },
+        { status: 400 },
+      );
+    }
+
+    const { name } = parsed.data;
+    // Cast structurally off the function's own parameter type rather than
+    // importing @simplewebauthn's response type by name — the schema above
+    // only confirms this is object-shaped; verifyRegistrationResponse does
+    // the actual structural validation.
+    const attestation = parsed.data.credential as unknown as Parameters<
+      typeof verifyRegistrationResponse
+    >[0]["response"];
+
+    const trimmedName = name?.trim() ? name.trim().slice(0, 60) : null;
 
     // Look up the challenge we issued in /register/options
     const challengeRecord = await prisma.challenge.findFirst({
