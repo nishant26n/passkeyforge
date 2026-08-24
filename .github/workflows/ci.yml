@@ -49,6 +49,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx prisma generate
+      # tsconfig.json includes .next/types/**, which next build/dev generate
+      # as a side effect locally — a clean CI checkout never has them
+      # otherwise, and tsc fails on the ambient LayoutProps/PageProps types.
+      - run: npx next typegen
       - run: npx tsc --noEmit
 
   unit-tests:
