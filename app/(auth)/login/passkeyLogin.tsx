@@ -4,7 +4,6 @@ import { useState } from "react";
 import { PasskeyError, usePasskey } from "use-passkey";
 import {
   Alert,
-  Card,
   CardHeader,
   Divider,
   Field,
@@ -71,7 +70,7 @@ const PasskeyLogin = () => {
   };
 
   return (
-    <Card>
+    <div className="w-full">
       <CardHeader
         title="Sign in with a passkey"
         subtitle="Enter your email to continue."
@@ -108,7 +107,7 @@ const PasskeyLogin = () => {
       >
         Sign in without typing your email
       </PasskeyButton>
-    </Card>
+    </div>
   );
 };
 

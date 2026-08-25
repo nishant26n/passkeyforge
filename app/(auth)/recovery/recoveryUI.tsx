@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   Alert,
-  Card,
   CardHeader,
   Field,
   SubmitButton,
@@ -79,7 +78,7 @@ export default function RecoveryUI() {
   };
 
   return (
-    <Card>
+    <div className="w-full">
       <CardHeader
         title="Use a recovery code"
         subtitle="Sign in with one of the codes you saved when you set up your account."
@@ -101,10 +100,10 @@ export default function RecoveryUI() {
           required
         />
 
-        <div className="space-y-1.5">
+        <div className="space-y-[7px]">
           <label
             htmlFor="recovery-code"
-            className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+            className="text-[13px] font-semibold text-text-secondary"
           >
             Recovery code
           </label>
@@ -123,20 +122,14 @@ export default function RecoveryUI() {
             }
             disabled={pending}
             required
-            className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-center font-mono text-base tracking-[0.2em] text-zinc-900 outline-none transition placeholder:tracking-[0.2em] placeholder:text-zinc-300 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-700 dark:focus:border-zinc-400 dark:focus:ring-zinc-100/10"
+            className="h-[52px] w-full rounded-[8px] border border-border bg-surface px-3 text-center font-mono text-[19px] tracking-[0.22em] text-text-primary outline-none transition shadow-[0_1px_2px_rgba(16,20,22,0.04)] placeholder:tracking-[0.22em] placeholder:text-text-tertiary focus:border-accent focus:ring-3 focus:ring-accent-ring disabled:opacity-60"
           />
           {errors.code ? (
-            <p
-              id="recovery-code-error"
-              className="text-xs text-red-600 dark:text-red-400"
-            >
+            <p id="recovery-code-error" className="text-xs text-error-text">
               {errors.code}
             </p>
           ) : (
-            <p
-              id="recovery-code-hint"
-              className="text-xs text-zinc-500 dark:text-zinc-400"
-            >
+            <p id="recovery-code-hint" className="text-xs text-text-muted">
               Each code works once. Dashes are added for you.
             </p>
           )}
@@ -145,24 +138,21 @@ export default function RecoveryUI() {
         <SubmitButton pending={pending}>Sign in</SubmitButton>
       </form>
 
-      <div className="mt-6 space-y-2 text-center">
-        <p className="text-sm">
+      <div className="mt-[22px] space-y-2 border-t border-border-hairline pt-[18px] text-center">
+        <p className="text-[13px]">
           <Link
             href="/authenticator-login"
-            className="text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
+            className="text-text-muted hover:text-accent"
           >
             Use an authenticator code instead
           </Link>
         </p>
-        <p className="text-sm">
-          <Link
-            href="/login"
-            className="text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
-          >
+        <p className="text-[13px]">
+          <Link href="/login" className="text-text-muted hover:text-accent">
             Back to sign in
           </Link>
         </p>
       </div>
-    </Card>
+    </div>
   );
 }
