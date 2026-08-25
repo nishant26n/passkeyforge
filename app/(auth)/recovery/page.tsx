@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/app/lib/auth/current-user";
+import { AuthShell } from "../_components/auth-shell";
+import { recoveryHero } from "../_components/auth-hero-content";
 import RecoveryUI from "./recoveryUI";
 
 export const metadata: Metadata = {
@@ -15,17 +17,19 @@ export default async function RecoverPage() {
   if (user) redirect("/");
 
   return (
-    <>
-      <RecoveryUI />
-      <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-        Don&apos;t have an account?{" "}
-        <Link
-          href="/register"
-          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-50"
-        >
-          Create one
-        </Link>
-      </p>
-    </>
+    <AuthShell hero={recoveryHero}>
+      <div className="mx-auto flex w-full max-w-[400px] flex-col">
+        <RecoveryUI />
+        <p className="mt-6 text-center text-sm text-text-muted">
+          Don&apos;t have an account?{" "}
+          <Link
+            href="/register"
+            className="font-semibold text-accent hover:text-accent-hover"
+          >
+            Create one
+          </Link>
+        </p>
+      </div>
+    </AuthShell>
   );
 }

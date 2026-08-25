@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   Alert,
-  Card,
   CardHeader,
   Field,
   SubmitButton,
@@ -59,7 +58,7 @@ export function TOTPForm() {
   }
 
   return (
-    <Card>
+    <div className="w-full">
       <CardHeader
         title="Login with authenticator code"
         subtitle="Use a code from your authenticator app to login."
@@ -81,10 +80,10 @@ export function TOTPForm() {
           required
         />
 
-        <div className="space-y-1.5">
+        <div className="space-y-[7px]">
           <label
             htmlFor="recovery-code"
-            className="text-sm font-medium text-zinc-800 dark:text-zinc-200"
+            className="text-[13px] font-semibold text-text-secondary"
           >
             Authentication code
           </label>
@@ -105,17 +104,14 @@ export function TOTPForm() {
             aria-describedby={errors.code ? "recovery-code-error" : undefined}
             disabled={pending}
             required
-            className="h-11 w-full rounded-lg border border-zinc-300 bg-white px-3 text-center font-mono text-base tracking-[0.4em] text-zinc-900 outline-none transition placeholder:tracking-[0.4em] placeholder:text-zinc-300 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-700 dark:focus:border-zinc-400 dark:focus:ring-zinc-100/10"
+            className="h-[52px] w-full rounded-[8px] border border-border bg-surface px-3 text-center font-mono text-[22px] tracking-[0.42em] text-text-primary outline-none transition shadow-[0_1px_2px_rgba(16,20,22,0.04)] placeholder:tracking-[0.42em] placeholder:text-text-tertiary focus:border-accent focus:ring-3 focus:ring-accent-ring disabled:opacity-60"
           />
           {errors.code ? (
-            <p
-              id="recovery-code-error"
-              className="text-xs text-red-600 dark:text-red-400"
-            >
+            <p id="recovery-code-error" className="text-xs text-error-text">
               {errors.code}
             </p>
           ) : (
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs text-text-muted">
               Open your authenticator app and enter the current code.
             </p>
           )}
@@ -124,25 +120,25 @@ export function TOTPForm() {
         <SubmitButton pending={pending}>Sign in</SubmitButton>
       </form>
 
-      <p className="mt-6 text-center text-xs text-zinc-500 dark:text-zinc-400">
-        Lost access to your authenticator app?{" "}
-        <Link
-          href="/recovery"
-          className="font-medium text-zinc-700 underline-offset-4 hover:underline dark:text-zinc-300"
-        >
-          Use a recovery code
-        </Link>
-        .
-      </p>
-
-      <div className="mt-6 w-full text-center">
+      <div className="mt-[22px] space-y-[10px] border-t border-border-hairline pt-[18px]">
+        <p className="text-[13px] leading-5 text-text-muted">
+          Lost access to your authenticator app? Contact support to regain
+          access to your account.{" "}
+          <Link
+            href="/recovery"
+            className="font-semibold text-accent hover:text-accent-hover"
+          >
+            Use a recovery code
+          </Link>
+          .
+        </p>
         <Link
           href="/login"
-          className="text-sm text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
+          className="block text-[13px] font-semibold text-accent hover:text-accent-hover"
         >
           Back to sign in
         </Link>
       </div>
-    </Card>
+    </div>
   );
 }

@@ -3,7 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function LogoutButton() {
+export function LogoutButton({
+  variant = "block",
+}: {
+  /** "block" = full-width card/footer button, "pill" = compact header button */
+  variant?: "block" | "pill";
+}) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
 
@@ -14,12 +19,17 @@ export function LogoutButton() {
     router.refresh();
   }
 
+  const classes =
+    variant === "pill"
+      ? "flex h-9 items-center rounded-[8px] border border-border bg-surface px-3.5 text-[13px] font-semibold text-text-secondary transition hover:bg-surface-subtle disabled:opacity-60"
+      : "flex h-11 w-full items-center justify-center rounded-[8px] border border-border bg-surface text-[15px] font-semibold text-text-primary transition hover:bg-surface-subtle disabled:opacity-60";
+
   return (
     <button
       type="button"
       onClick={handleLogout}
       disabled={pending}
-      className="h-11 w-full rounded-lg border border-zinc-300 bg-white text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
+      className={classes}
     >
       {pending ? "Signing out…" : "Sign out"}
     </button>

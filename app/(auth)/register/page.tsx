@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/app/lib/auth/current-user";
+import { AuthShell } from "../_components/auth-shell";
+import { registerHero } from "../_components/auth-hero-content";
 import { RegisterForm } from "./register-form";
 
 export const metadata: Metadata = {
@@ -14,17 +16,19 @@ export default async function RegisterPage() {
   if (user) redirect("/");
 
   return (
-    <>
-      <RegisterForm />
-      <p className="mt-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-        Already have an account?{" "}
-        <Link
-          href="/login"
-          className="font-medium text-zinc-900 underline-offset-4 hover:underline dark:text-zinc-50"
-        >
-          Sign in
-        </Link>
-      </p>
-    </>
+    <AuthShell hero={registerHero}>
+      <div className="mx-auto flex w-full max-w-[400px] flex-col">
+        <RegisterForm />
+        <p className="mt-6 text-center text-sm text-text-muted">
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-semibold text-accent hover:text-accent-hover"
+          >
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </AuthShell>
   );
 }

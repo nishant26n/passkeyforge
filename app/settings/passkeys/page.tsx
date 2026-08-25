@@ -3,8 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/app/lib/auth/current-user";
 import { prisma } from "@/app/lib/prisma";
+import { AppHeader } from "@/app/app-header";
 import { TotpSetup } from "./totp-setup";
 import { RecoveryCodes } from "./recovery-code";
+import { LogoutButton } from "@/app/logout-button";
 
 export const metadata: Metadata = {
   title: "Security settings · Passkey Forge",
@@ -36,11 +38,21 @@ export default async function PasskeySettings() {
   ]);
 
   return (
-    <div className="flex flex-1 justify-center bg-zinc-50 px-4 py-10 font-sans dark:bg-black sm:py-14">
-      <div className="w-full max-w-xl">
+    <div className="flex min-h-screen flex-col bg-page">
+      <AppHeader
+        right={
+          <>
+            <span className="hidden tablet:block">
+              <LogoutButton variant="pill" />
+            </span>
+          </>
+        }
+      />
+
+      <div className="mx-auto flex w-full max-w-[920px] flex-1 flex-col gap-5 px-6 py-8 tablet:px-10 tablet:py-9">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 text-sm text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+          className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-text-muted transition hover:text-accent"
         >
           <svg
             viewBox="0 0 24 24"
@@ -57,24 +69,20 @@ export default async function PasskeySettings() {
           Back
         </Link>
 
-        <header className="mt-4 mb-6 space-y-1">
-          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+        <header className="space-y-1">
+          <h1 className="text-2xl font-bold tracking-[-0.025em] text-text-primary">
             Security settings
           </h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Signed in as {user.email}
-          </p>
+          <p className="text-sm text-text-muted">Signed in as {user.email}</p>
         </header>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           <TotpSetup totpEnabled={user.totpEnabled} />
 
           <RecoveryCodes
             remaining={remaining}
             total={total}
-            generatedAt={
-              latest ? dateFormat.format(latest.createdAt) : null
-            }
+            generatedAt={latest ? dateFormat.format(latest.createdAt) : null}
           />
         </div>
       </div>

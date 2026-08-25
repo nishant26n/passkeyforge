@@ -133,28 +133,30 @@ export function PasskeyManager({
   }
 
   return (
-    <div className="space-y-3 text-left">
-      <div className="flex items-baseline justify-between gap-2">
-        <h2 className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+    <div className="text-left">
+      <header className="flex items-center justify-between gap-4 border-b border-border-divider px-5 py-4">
+        <h2 className="text-[15px] font-semibold text-text-primary">
           Passkeys
         </h2>
-        <span className="text-xs text-zinc-400 dark:text-zinc-600">
+        <span className="rounded-[6px] border border-border-card px-2 py-1 font-mono text-[11px] uppercase tracking-[0.06em] text-text-muted">
           {passkeys.length} registered
         </span>
-      </div>
+      </header>
 
       {passkeys.length > 0 ? (
-        <ul className="divide-y divide-zinc-200 rounded-lg border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+        <ul>
           {passkeys.map((passkey) => (
             <li
               key={passkey.id}
-              className="flex items-start justify-between gap-3 px-3 py-2.5"
+              className={`flex items-center justify-between gap-4 border-b border-border-divider px-5 py-4 last:border-b-0 ${
+                confirmingId === passkey.id ? "bg-surface-tint" : ""
+              }`}
             >
               <div className="min-w-0">
-                <p className="truncate text-sm text-zinc-800 dark:text-zinc-200">
+                <p className="truncate text-sm font-semibold text-text-primary">
                   {passkey.name ?? describeDevice(passkey.transports)}
                 </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                <p className="mt-0.5 font-mono text-xs text-text-muted">
                   {passkey.name && passkey.transports.length > 0
                     ? `${passkey.transports.join(", ")} · `
                     : ""}
@@ -171,7 +173,7 @@ export function PasskeyManager({
                     type="button"
                     onClick={() => handleRevoke(passkey.id)}
                     disabled={revokingId === passkey.id}
-                    className="text-xs font-medium text-red-600 transition hover:text-red-700 disabled:opacity-60 dark:text-red-400 dark:hover:text-red-300"
+                    className="flex h-8 items-center rounded-[7px] bg-error-hover px-3 text-[13px] font-semibold text-white transition hover:bg-error-hover disabled:opacity-60"
                   >
                     {revokingId === passkey.id ? "Removing…" : "Confirm"}
                   </button>
@@ -179,7 +181,7 @@ export function PasskeyManager({
                     type="button"
                     onClick={() => setConfirmingId(null)}
                     disabled={revokingId === passkey.id}
-                    className="text-xs text-zinc-500 transition hover:text-zinc-800 disabled:opacity-60 dark:text-zinc-400 dark:hover:text-zinc-200"
+                    className="flex h-8 items-center rounded-[7px] border border-border-card px-3 text-[13px] font-semibold text-text-secondary transition hover:bg-surface-subtle disabled:opacity-60"
                   >
                     Cancel
                   </button>
@@ -189,7 +191,7 @@ export function PasskeyManager({
                   type="button"
                   onClick={() => setConfirmingId(passkey.id)}
                   aria-label={`Remove ${passkey.name ?? `passkey added ${passkey.addedAt}`}`}
-                  className="shrink-0 text-xs font-medium text-zinc-500 transition hover:text-red-600 dark:text-zinc-400 dark:hover:text-red-400"
+                  className="flex h-8 shrink-0 items-center rounded-[7px] border border-border-card px-3 text-[13px] font-semibold text-text-secondary transition hover:border-error-border hover:bg-error-bg hover:text-error-text"
                 >
                   Remove
                 </button>
@@ -198,32 +200,34 @@ export function PasskeyManager({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="px-5 py-4 text-sm text-text-muted">
           No passkeys yet. Add one to sign in without your password.
         </p>
       )}
 
-      {error ? <Alert>{error}</Alert> : null}
-      {success ? <Alert variant="success">{success}</Alert> : null}
+      <div className="space-y-3.5 border-t border-border-divider bg-surface-quiet px-5 py-[18px]">
+        {error ? <Alert>{error}</Alert> : null}
+        {success ? <Alert variant="success">{success}</Alert> : null}
 
-      <div className="space-y-3">
-        <Field
-          label="Name"
-          hint={
-            <span className="text-xs text-zinc-400 dark:text-zinc-600">
-              Optional
-            </span>
-          }
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          maxLength={NAME_MAX_LENGTH}
-          disabled={pending}
-          placeholder="Work laptop"
-        />
+        <div className="flex items-end gap-2.5">
+          <div className="flex-1">
+            <Field
+              label="Name"
+              hint={<span className="text-xs text-text-tertiary">Optional</span>}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              maxLength={NAME_MAX_LENGTH}
+              disabled={pending}
+              placeholder="Work laptop"
+            />
+          </div>
 
-        <PasskeyButton onClick={handleAddPasskey} pending={pending}>
-          {pending ? "Waiting for authenticator…" : "Add a passkey"}
-        </PasskeyButton>
+          <div className="shrink-0">
+            <PasskeyButton onClick={handleAddPasskey} pending={pending}>
+              {pending ? "Waiting for authenticator…" : "Add a passkey"}
+            </PasskeyButton>
+          </div>
+        </div>
       </div>
     </div>
   );
