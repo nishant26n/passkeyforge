@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  WebAuthnError,
-  browserSupportsWebAuthn,
-  startRegistration,
-} from "@simplewebauthn/browser";
+import { PasskeyError, usePasskey } from "use-passkey";
 import { Alert, Field, PasskeyButton } from "@/app/(auth)/_components/ui";
 
 export type PasskeySummary = {
@@ -40,11 +36,11 @@ export function PasskeyManager({
 }) {
   const [passkeys, setPasskeys] = useState(initialPasskeys);
   const [name, setName] = useState("");
-  const [pending, setPending] = useState(false);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { register, isRegistering } = usePasskey();
 
   async function refreshPasskeys() {
     const response = await fetch("/api/webauthn/credentials");
@@ -62,47 +58,13 @@ export function PasskeyManager({
     setError(null);
     setSuccess(null);
 
-    // Checked here rather than on mount: it reads `window`, so a render-time
-    // check would mismatch the server-rendered markup
-    if (!browserSupportsWebAuthn()) {
-      setError("This browser doesn't support passkeys");
-      return;
-    }
-
-    setPending(true);
-
     try {
-      const optionsResponse = await fetch("/api/webauthn/register/options", {
-        method: "POST",
-      });
-      const optionsJSON = await optionsResponse.json();
-
-      if (!optionsResponse.ok) {
-        setError(optionsJSON.error ?? "Could not start passkey registration");
-        return;
-      }
-
-      const attestation = await startRegistration({ optionsJSON });
-
-      const verifyResponse = await fetch("/api/webauthn/register/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ credential: attestation, name: name.trim() }),
-      });
-      const verifyResult = await verifyResponse.json();
-
-      if (!verifyResponse.ok) {
-        setError(verifyResult.error ?? "Could not save passkey");
-        return;
-      }
-
+      await register({ name: name.trim() });
       setSuccess("Passkey added");
       setName("");
       await refreshPasskeys();
     } catch (err) {
       setError(describeRegistrationError(err));
-    } finally {
-      setPending(false);
     }
   }
 
@@ -217,14 +179,14 @@ export function PasskeyManager({
               value={name}
               onChange={(event) => setName(event.target.value)}
               maxLength={NAME_MAX_LENGTH}
-              disabled={pending}
+              disabled={isRegistering}
               placeholder="Work laptop"
             />
           </div>
 
           <div className="shrink-0">
-            <PasskeyButton onClick={handleAddPasskey} pending={pending}>
-              {pending ? "Waiting for authenticator…" : "Add a passkey"}
+            <PasskeyButton onClick={handleAddPasskey} pending={isRegistering}>
+              {isRegistering ? "Waiting for authenticator…" : "Add a passkey"}
             </PasskeyButton>
           </div>
         </div>
@@ -261,11 +223,13 @@ function toSummary(credential: CredentialResponse): PasskeySummary {
 }
 
 function describeRegistrationError(err: unknown) {
-  if (err instanceof WebAuthnError) {
-    if (err.code === "ERROR_AUTHENTICATOR_PREVIOUSLY_REGISTERED") {
+  if (err instanceof PasskeyError) {
+    // use-passkey's own wording for these two is more generic; keep this
+    // app's existing copy for the one case a test pins exactly.
+    if (err.code === "already_registered") {
       return "This device already has a passkey for your account";
     }
-    if (err.code === "ERROR_CEREMONY_ABORTED") {
+    if (err.code === "ceremony_cancelled") {
       return "Passkey registration was cancelled";
     }
     return err.message;

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { PasskeyError, usePasskey } from "use-passkey";
 import {
   Alert,
   CardHeader,
@@ -9,62 +10,34 @@ import {
   PasskeyButton,
   SubmitButton,
 } from "../_components/ui";
-import { startAuthentication } from "@simplewebauthn/browser";
 import { useRouter } from "next/navigation";
 
 type Errors = { email?: string };
-type PendingAction = "email" | "usernameless" | null;
+
+function describeLoginError(err: unknown): string {
+  if (err instanceof PasskeyError) {
+    if (err.code === "network_error") {
+      return "Network error. Check your connection and try again.";
+    }
+    return err.message;
+  }
+  return "Network error. Check your connection and try again.";
+}
 
 const PasskeyLogin = () => {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState<Errors>({});
-  // Tracks which of the two buttons triggered the ceremony, so only that
-  // one shows a spinner — a shared boolean would spin both at once.
-  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [formError, setFormError] = useState("");
 
-  /** Requests options, runs the ceremony, and verifies — shared by the
-   * email-first and usernameless flows, which only differ in the request
-   * body sent to /api/webauthn/auth/options. */
-  const authenticate = async (optionsBody: Record<string, unknown>) => {
-    const response = await fetch("/api/webauthn/auth/options", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(optionsBody),
-    });
-
-    const data = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      setFormError(data.error ?? "Something went wrong. Try again.");
-      setPendingAction(null);
-      return;
-    }
-
-    const authenticationResponse = await startAuthentication({
-      optionsJSON: data,
-    });
-
-    const verifyResponse = await fetch("/api/webauthn/auth/verify", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(authenticationResponse),
-    });
-
-    const verifyData = await verifyResponse.json().catch(() => ({}));
-
-    if (!verifyResponse.ok) {
-      setFormError(verifyData.error ?? "Passkey authentication failed.");
-      setPendingAction(null);
-      return;
-    }
-
-    router.replace("/");
-    router.refresh();
-  };
+  // Two independent hook instances, one per button, so each has its own
+  // isLoggingIn flag. A single shared instance would spin both buttons on
+  // every click — the exact bug this app shipped and fixed before
+  // use-passkey existed; using one instance for both here would bring it
+  // straight back.
+  const emailAuth = usePasskey();
+  const usernamelessAuth = usePasskey();
+  const pending = emailAuth.isLoggingIn || usernamelessAuth.isLoggingIn;
 
   const handlePasskey = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -75,25 +48,24 @@ const PasskeyLogin = () => {
     setErrors(next);
     if (Object.keys(next).length > 0) return;
 
-    setPendingAction("email");
-
     try {
-      await authenticate({ email });
-    } catch {
-      setFormError("Network error. Check your connection and try again.");
-      setPendingAction(null);
+      await emailAuth.login({ email });
+      router.replace("/");
+      router.refresh();
+    } catch (err) {
+      setFormError(describeLoginError(err));
     }
   };
 
   const handleUsernameless = async () => {
     setFormError("");
-    setPendingAction("usernameless");
 
     try {
-      await authenticate({ usernameless: true });
-    } catch {
-      setFormError("Network error. Check your connection and try again.");
-      setPendingAction(null);
+      await usernamelessAuth.login({ usernameless: true });
+      router.replace("/");
+      router.refresh();
+    } catch (err) {
+      setFormError(describeLoginError(err));
     }
   };
 
@@ -115,14 +87,11 @@ const PasskeyLogin = () => {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errors.email}
-          disabled={pendingAction !== null}
+          disabled={pending}
           required
         />
 
-        <SubmitButton
-          pending={pendingAction === "email"}
-          disabled={pendingAction !== null}
-        >
+        <SubmitButton pending={emailAuth.isLoggingIn} disabled={pending}>
           Login with Passkey
         </SubmitButton>
       </form>
@@ -132,8 +101,8 @@ const PasskeyLogin = () => {
       </div>
 
       <PasskeyButton
-        pending={pendingAction === "usernameless"}
-        disabled={pendingAction !== null}
+        pending={usernamelessAuth.isLoggingIn}
+        disabled={pending}
         onClick={handleUsernameless}
       >
         Sign in without typing your email
