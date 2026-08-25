@@ -32,7 +32,7 @@ test.describe("login page", () => {
       page.getByRole("button", { name: "Continue with a passkey" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Continue with an authenticator code" }),
+      page.getByRole("button", { name: "Use authenticator code" }),
     ).toBeVisible();
   });
 
@@ -64,9 +64,7 @@ test.describe("login page", () => {
   test("authenticator option navigates to the authenticator sign-in page", async ({
     page,
   }) => {
-    await page
-      .getByRole("button", { name: "Continue with an authenticator code" })
-      .click();
+    await page.getByRole("button", { name: "Use authenticator code" }).click();
 
     await expect(page).toHaveURL("/authenticator-login");
     await expect(
