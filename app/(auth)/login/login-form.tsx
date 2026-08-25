@@ -123,7 +123,7 @@ export function LoginForm({ registered }: { registered?: boolean }) {
           disabled={pending}
           onClick={() => router.push("/authenticator-login")}
         >
-          Continue with an authenticator code
+          Use authenticator code
         </PasskeyButton>
       </div>
 
