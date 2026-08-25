@@ -3,13 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Alert, Spinner } from "@/app/(auth)/_components/ui";
-
-const primaryButton =
-  "flex h-11 items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:outline-zinc-100";
-
-const secondaryButton =
-  "flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100";
+import { Alert, Button } from "@/app/(auth)/_components/ui";
 
 // Apps that can't scan want the bare base32 secret, not the whole otpauth:// URI
 function secretFromUri(uri: string) {
@@ -94,13 +88,13 @@ export function TotpSetup({ totpEnabled }: { totpEnabled: boolean }) {
   }
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-      <header className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+    <section className="rounded-[12px] border border-border-card bg-surface">
+      <header className="flex items-start justify-between gap-4 border-b border-border-divider px-5 py-4">
         <div className="space-y-0.5">
-          <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          <h2 className="text-[15px] font-semibold text-text-primary">
             Authenticator app
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-text-muted">
             Time-based codes as a backup when a passkey isn&apos;t available.
           </p>
         </div>
@@ -115,7 +109,7 @@ export function TotpSetup({ totpEnabled }: { totpEnabled: boolean }) {
               title="Scan the QR code"
               description="Open your authenticator app and add a new account."
             >
-              <div className="flex w-fit justify-center rounded-lg border border-zinc-200 bg-white p-3 dark:border-zinc-800">
+              <div className="flex w-fit justify-center rounded-[10px] border border-border-card bg-white p-3">
                 {/* Fixed white background and black modules: inheriting the
                     dark theme's colors would invert the code and break scanning */}
                 <QRCodeSVG
@@ -129,10 +123,10 @@ export function TotpSetup({ totpEnabled }: { totpEnabled: boolean }) {
               </div>
 
               <details className="mt-2">
-                <summary className="cursor-pointer text-xs text-zinc-500 transition hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200">
+                <summary className="cursor-pointer text-xs text-text-muted transition hover:text-text-primary">
                   Can&apos;t scan? Enter the setup key
                 </summary>
-                <code className="mt-1.5 block break-all rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 font-mono text-xs tracking-wider text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300">
+                <code className="mt-1.5 block break-all rounded-[8px] border border-border-card bg-surface-subtle px-3 py-2 font-mono text-xs tracking-wider text-text-secondary">
                   {secretFromUri(uri) ?? uri}
                 </code>
               </details>
@@ -157,29 +151,24 @@ export function TotpSetup({ totpEnabled }: { totpEnabled: boolean }) {
                   placeholder="000000"
                   aria-label="6-digit authentication code"
                   disabled={verifying}
-                  className="h-11 w-36 rounded-lg border border-zinc-300 bg-white px-3 text-center font-mono text-base tracking-[0.4em] text-zinc-900 outline-none transition placeholder:tracking-[0.4em] placeholder:text-zinc-300 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-700 dark:focus:border-zinc-400 dark:focus:ring-zinc-100/10"
+                  className="h-11 w-36 rounded-[8px] border border-border bg-surface px-3 text-center font-mono text-base tracking-[0.4em] text-text-primary outline-none transition placeholder:tracking-[0.4em] placeholder:text-text-tertiary focus:border-accent focus:ring-3 focus:ring-accent-ring disabled:opacity-60"
                 />
-                <button
+                <Button
+                  variant="primary"
                   type="submit"
                   disabled={code.length !== 6 || verifying}
-                  className={primaryButton}
+                  pending={verifying}
                 >
-                  {verifying ? <Spinner /> : null}
                   {verifying ? "Verifying…" : "Verify"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  disabled={verifying}
-                  className={secondaryButton}
-                >
+                </Button>
+                <Button onClick={handleCancel} disabled={verifying}>
                   Cancel
-                </button>
+                </Button>
               </form>
             </Step>
           </div>
         ) : (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-text-secondary">
             {enabled
               ? "Your authenticator app is set up. Replacing it invalidates the current one."
               : "Not set up yet. Add an authenticator app to generate sign-in codes."}
@@ -191,24 +180,23 @@ export function TotpSetup({ totpEnabled }: { totpEnabled: boolean }) {
 
         {uri ? null : (
           <div className="space-y-2">
-            <button
-              type="button"
+            <Button
+              variant={enabled ? "secondary" : "primary"}
               onClick={handleSetup}
               disabled={pending}
-              className={enabled ? secondaryButton : primaryButton}
+              pending={pending}
             >
-              {pending ? <Spinner /> : null}
               {pending
                 ? "Generating…"
                 : enabled
                   ? "Replace authenticator app"
                   : "Set up authenticator app"}
-            </button>
+            </Button>
             {enabled ? (
-              <p className="text-xs text-amber-700 dark:text-amber-500">
-                Replacing turns two-factor off until you confirm a code from the
-                new app.
-              </p>
+              <Alert variant="warning">
+                Replacing turns two-factor off until you confirm a code from
+                the new app.
+              </Alert>
             ) : null}
           </div>
         )}
@@ -220,16 +208,16 @@ export function TotpSetup({ totpEnabled }: { totpEnabled: boolean }) {
 function StatusBadge({ enabled }: { enabled: boolean }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
         enabled
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
-          : "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
+          ? "border-success-border bg-success-bg text-success-text"
+          : "border-border-card bg-surface-subtle text-text-muted"
       }`}
     >
       <span
         aria-hidden
         className={`h-1.5 w-1.5 rounded-full ${
-          enabled ? "bg-emerald-500" : "bg-zinc-400 dark:bg-zinc-600"
+          enabled ? "bg-accent" : "bg-text-tertiary"
         }`}
       />
       {enabled ? "Enabled" : "Not set up"}
@@ -250,16 +238,12 @@ function Step({
 }) {
   return (
     <div className="flex gap-3">
-      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-zinc-300 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:text-zinc-400">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border-card text-xs font-semibold text-text-muted">
         {number}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
-          {title}
-        </p>
-        <p className="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-          {description}
-        </p>
+        <p className="text-sm font-semibold text-text-primary">{title}</p>
+        <p className="mb-2 text-xs text-text-muted">{description}</p>
         {children}
       </div>
     </div>

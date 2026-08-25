@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   Alert,
-  Card,
   CardHeader,
   Field,
   PasswordField,
@@ -14,12 +13,7 @@ import {
 type Errors = { email?: string; password?: string };
 
 const STRENGTH_LABELS = ["Too short", "Weak", "Fair", "Strong"];
-const STRENGTH_COLORS = [
-  "bg-red-500",
-  "bg-orange-500",
-  "bg-amber-500",
-  "bg-emerald-500",
-];
+const STRENGTH_COLORS = ["bg-error-text", "bg-warning-text", "bg-warning-text", "bg-accent"];
 
 /** 0-3 score from length plus character variety. */
 function scorePassword(value: string) {
@@ -77,7 +71,7 @@ export function RegisterForm() {
   }
 
   return (
-    <Card>
+    <div className="w-full">
       <CardHeader
         title="Create your account"
         subtitle="Start forging passkeys in under a minute."
@@ -114,21 +108,19 @@ export function RegisterForm() {
 
           {password ? (
             <div className="flex items-center gap-3">
-              <div className="flex flex-1 gap-1" aria-hidden>
+              <div className="flex flex-1 gap-[5px]" aria-hidden>
                 {[0, 1, 2, 3].map((i) => (
                   <span
                     key={i}
                     className={`h-1 flex-1 rounded-full transition-colors ${
-                      i <= score
-                        ? STRENGTH_COLORS[score]
-                        : "bg-zinc-200 dark:bg-zinc-800"
+                      i <= score ? STRENGTH_COLORS[score] : "bg-border"
                     }`}
                   />
                 ))}
               </div>
               <span
                 aria-live="polite"
-                className="w-16 text-right text-xs text-zinc-500 dark:text-zinc-400"
+                className="font-mono text-[11px] uppercase tracking-[0.08em] text-accent w-16 text-right"
               >
                 {STRENGTH_LABELS[score]}
               </span>
@@ -138,24 +130,24 @@ export function RegisterForm() {
 
         <SubmitButton pending={pending}>Create account</SubmitButton>
 
-        <p className="text-center text-xs leading-5 text-zinc-500 dark:text-zinc-400">
+        <p className="text-center text-xs leading-5 text-text-muted">
           By creating an account you agree to our{" "}
           <a
             href="/terms"
-            className="underline underline-offset-4 hover:text-zinc-800 dark:hover:text-zinc-200"
+            className="text-text-secondary underline underline-offset-4"
           >
             Terms
           </a>{" "}
           and{" "}
           <a
             href="/privacy"
-            className="underline underline-offset-4 hover:text-zinc-800 dark:hover:text-zinc-200"
+            className="text-text-secondary underline underline-offset-4"
           >
             Privacy Policy
           </a>
           .
         </p>
       </form>
-    </Card>
+    </div>
   );
 }

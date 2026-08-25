@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   Alert,
-  Card,
   CardHeader,
   Divider,
   Field,
@@ -60,7 +59,7 @@ export function LoginForm({ registered }: { registered?: boolean }) {
   }
 
   return (
-    <Card>
+    <div className="w-full">
       <CardHeader
         title="Welcome back"
         subtitle="Sign in to continue to Passkey Forge."
@@ -98,7 +97,7 @@ export function LoginForm({ registered }: { registered?: boolean }) {
           hint={
             <Link
               href="/recovery"
-              className="text-xs text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
+              className="text-xs text-text-muted underline-offset-4 hover:underline hover:text-accent"
             >
               Forgot password?
             </Link>
@@ -131,11 +130,11 @@ export function LoginForm({ registered }: { registered?: boolean }) {
       <div className="mt-4 w-full text-center">
         <Link
           href="/recovery"
-          className="text-sm text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
+          className="text-sm text-text-muted underline-offset-4 hover:underline hover:text-accent"
         >
           Recover your account
         </Link>
       </div>
-    </Card>
+    </div>
   );
 }

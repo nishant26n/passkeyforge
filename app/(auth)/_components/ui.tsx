@@ -3,9 +3,9 @@
 import { useId, useState } from "react";
 
 const inputClass =
-  "w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus:border-zinc-900 focus:ring-2 focus:ring-zinc-900/10 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:placeholder:text-zinc-600 dark:focus:border-zinc-400 dark:focus:ring-zinc-100/10";
+  "w-full rounded-[8px] border border-border bg-surface px-3.5 h-11 text-[15px] text-text-primary outline-none transition shadow-[0_1px_2px_rgba(16,20,22,0.04)] placeholder:text-text-tertiary focus:border-accent focus:ring-3 focus:ring-accent-ring disabled:opacity-60";
 
-const labelClass = "text-sm font-medium text-zinc-800 dark:text-zinc-200";
+const labelClass = "text-[13px] font-semibold text-text-secondary";
 
 type FieldProps = Omit<React.ComponentProps<"input">, "id" | "className"> & {
   label: string;
@@ -18,7 +18,7 @@ export function Field({ label, hint, error, ...props }: FieldProps) {
   const errorId = `${id}-error`;
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-[7px]">
       <div className="flex items-baseline justify-between gap-2">
         <label htmlFor={id} className={labelClass}>
           {label}
@@ -43,7 +43,7 @@ export function PasswordField({ label, hint, error, ...props }: FieldProps) {
   const [visible, setVisible] = useState(false);
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-[7px]">
       <div className="flex items-baseline justify-between gap-2">
         <label htmlFor={id} className={labelClass}>
           {label}
@@ -64,7 +64,7 @@ export function PasswordField({ label, hint, error, ...props }: FieldProps) {
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? "Hide password" : "Show password"}
           aria-pressed={visible}
-          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-zinc-400 transition hover:text-zinc-700 dark:hover:text-zinc-200"
+          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-text-tertiary transition hover:text-text-secondary"
         >
           <svg
             viewBox="0 0 24 24"
@@ -73,7 +73,7 @@ export function PasswordField({ label, hint, error, ...props }: FieldProps) {
             strokeWidth={1.8}
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="h-4 w-4"
+            className="h-[17px] w-[17px]"
             aria-hidden
           >
             <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12Z" />
@@ -95,28 +95,29 @@ export function FieldError({
   children: React.ReactNode;
 }) {
   return (
-    <p id={id} className="text-xs text-red-600 dark:text-red-400">
+    <p id={id} className="text-xs text-error-text">
       {children}
     </p>
   );
 }
 
+const alertStyles = {
+  error: "border-error-border bg-error-bg text-error-text",
+  success: "border-success-border bg-success-bg text-success-text",
+  warning: "border-warning-border bg-warning-bg text-warning-text",
+};
+
 export function Alert({
   variant = "error",
   children,
 }: {
-  variant?: "error" | "success";
+  variant?: "error" | "success" | "warning";
   children: React.ReactNode;
 }) {
-  const styles =
-    variant === "error"
-      ? "border-red-200 bg-red-50 text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-      : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300";
-
   return (
     <div
       role="alert"
-      className={`rounded-lg border px-3 py-2.5 text-sm ${styles}`}
+      className={`rounded-[8px] border px-3 py-2.5 text-sm font-medium ${alertStyles[variant]}`}
     >
       {children}
     </div>
@@ -136,7 +137,40 @@ export function SubmitButton({
     <button
       type="submit"
       disabled={disabled ?? pending}
-      className="flex h-11 w-full items-center justify-center rounded-lg bg-zinc-900 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:outline-zinc-100"
+      className="flex h-11 w-full items-center justify-center rounded-[8px] bg-accent text-[15px] font-semibold text-accent-on transition hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60 shadow-[0_1px_2px_rgba(16,20,22,0.12)]"
+    >
+      {pending ? <Spinner /> : children}
+    </button>
+  );
+}
+
+type ButtonProps = Omit<React.ComponentProps<"button">, "className"> & {
+  pending?: boolean;
+  variant?: "primary" | "secondary";
+};
+
+/** Generic secondary/primary action button — used outside <form> submit flows
+ * (e.g. settings page actions) so those files don't hand-roll their own class
+ * strings. */
+export function Button({
+  pending,
+  disabled,
+  children,
+  variant = "secondary",
+  type = "button",
+  ...props
+}: ButtonProps) {
+  const classes =
+    variant === "primary"
+      ? "flex h-11 items-center justify-center gap-2 rounded-[8px] bg-accent px-4 text-sm font-semibold text-accent-on transition hover:bg-accent-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
+      : "flex h-11 items-center justify-center gap-2 rounded-[8px] border border-border bg-surface px-4 text-sm font-semibold text-text-primary transition hover:bg-surface-subtle hover:border-border-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60";
+
+  return (
+    <button
+      type={type}
+      disabled={disabled ?? pending}
+      className={classes}
+      {...props}
     >
       {pending ? <Spinner /> : children}
     </button>
@@ -160,7 +194,7 @@ export function PasskeyButton({
     <button
       type="button"
       disabled={disabled ?? pending}
-      className="flex h-11 w-full items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100"
+      className="flex h-11 w-full px-4 items-center justify-center gap-2 rounded-[8px] border border-border bg-surface text-[15px] font-semibold text-text-primary transition hover:bg-surface-subtle hover:border-border-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent disabled:opacity-60"
       {...props}
     >
       {pending ? (
@@ -173,7 +207,7 @@ export function PasskeyButton({
           strokeWidth={1.8}
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="h-4 w-4"
+          className="h-[17px] w-[17px] text-accent"
           aria-hidden
         >
           <circle cx="9" cy="8" r="3.5" />
@@ -188,19 +222,19 @@ export function PasskeyButton({
 
 export function Divider({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3">
-      <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
-      <span className="text-xs uppercase tracking-wide text-zinc-400 dark:text-zinc-600">
+    <div className="flex items-center gap-3.5">
+      <span className="h-px flex-1 bg-border-hairline" />
+      <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-text-tertiary">
         {children}
       </span>
-      <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+      <span className="h-px flex-1 bg-border-hairline" />
     </div>
   );
 }
 
 export function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full rounded-2xl border border-zinc-200 bg-white p-8 shadow-sm dark:border-zinc-800 dark:bg-zinc-950">
+    <div className="w-full rounded-[10px] border border-border-card bg-surface p-8 shadow-sm">
       {children}
     </div>
   );
@@ -214,11 +248,11 @@ export function CardHeader({
   subtitle: string;
 }) {
   return (
-    <div className="mb-6 space-y-1">
-      <h1 className="text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
+    <div className="mb-6 space-y-2">
+      <h1 className="text-[26px] font-bold leading-8 tracking-[-0.03em] text-text-primary">
         {title}
       </h1>
-      <p className="text-sm text-zinc-500 dark:text-zinc-400">{subtitle}</p>
+      <p className="text-[15px] leading-6 text-text-muted">{subtitle}</p>
     </div>
   );
 }

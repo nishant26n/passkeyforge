@@ -2,16 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Alert, Spinner } from "@/app/(auth)/_components/ui";
-
-const primaryButton =
-  "flex h-11 items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-zinc-50 transition hover:bg-zinc-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200 dark:focus-visible:outline-zinc-100";
+import { Alert, Button } from "@/app/(auth)/_components/ui";
 
 // Below this many unused codes, nudge the user to regenerate
 const LOW_THRESHOLD = 3;
-
-const secondaryButton =
-  "flex h-11 items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 text-sm font-medium text-zinc-800 transition hover:bg-zinc-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 disabled:opacity-60 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800 dark:focus-visible:outline-zinc-100";
 
 export function RecoveryCodes({
   remaining,
@@ -95,13 +89,13 @@ export function RecoveryCodes({
   }
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-950">
-      <header className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
+    <section className="rounded-[12px] border border-border-card bg-surface">
+      <header className="flex items-start justify-between gap-4 border-b border-border-divider px-5 py-4">
         <div className="space-y-0.5">
-          <h2 className="text-sm font-medium text-zinc-900 dark:text-zinc-50">
+          <h2 className="text-[15px] font-semibold text-text-primary">
             Recovery codes
           </h2>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          <p className="text-xs text-text-muted">
             One-time codes for when every passkey and authenticator is gone.
           </p>
         </div>
@@ -111,18 +105,18 @@ export function RecoveryCodes({
       <div className="space-y-4 px-5 py-4">
         {codes ? (
           <>
-            <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-300">
+            <Alert variant="warning">
               These codes are shown once. Save them now — leaving this page
               hides them for good.
-            </div>
+            </Alert>
 
-            <ol className="grid grid-cols-1 gap-1.5 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-800 dark:bg-zinc-900 sm:grid-cols-2">
+            <ol className="grid grid-cols-1 gap-1.5 rounded-[10px] border border-border-card bg-surface-muted p-3 tablet:grid-cols-2">
               {codes.map((code, index) => (
                 <li
                   key={code}
-                  className="flex items-center gap-2 font-mono text-sm tracking-wider text-zinc-800 dark:text-zinc-200"
+                  className="flex items-center gap-2 font-mono text-sm tracking-wider text-text-primary"
                 >
-                  <span className="w-5 shrink-0 text-right text-xs text-zinc-400 dark:text-zinc-600">
+                  <span className="w-5 shrink-0 text-right text-xs text-text-tertiary">
                     {index + 1}
                   </span>
                   {code}
@@ -131,48 +125,37 @@ export function RecoveryCodes({
             </ol>
 
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={handleCopy}
-                className={secondaryButton}
-              >
+              <Button onClick={handleCopy}>
                 {copied ? "Copied" : "Copy all"}
-              </button>
-              <button
-                type="button"
-                onClick={handleDownload}
-                className={secondaryButton}
-              >
-                Download .txt
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button onClick={handleDownload}>Download .txt</Button>
+              <Button
+                variant="primary"
                 onClick={() => {
                   setCodes(null);
                   setCopied(false);
                 }}
-                className={primaryButton}
               >
                 I saved them
-              </button>
+              </Button>
             </div>
           </>
         ) : hasCodes ? (
           <div className="space-y-3">
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+            <div className="rounded-[10px] border border-border-card bg-surface-muted px-4 py-3">
               <div className="flex items-baseline gap-1.5">
                 <span
-                  className={`text-2xl font-semibold tabular-nums ${
+                  className={`text-2xl font-bold tabular-nums ${
                     remaining === 0
-                      ? "text-red-600 dark:text-red-400"
+                      ? "text-error-text"
                       : remaining <= LOW_THRESHOLD
-                        ? "text-amber-600 dark:text-amber-500"
-                        : "text-zinc-900 dark:text-zinc-50"
+                        ? "text-warning-text"
+                        : "text-text-primary"
                   }`}
                 >
                   {remaining}
                 </span>
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                <span className="text-sm text-text-muted">
                   of {total} codes unused
                 </span>
               </div>
@@ -186,15 +169,13 @@ export function RecoveryCodes({
                   <span
                     key={index}
                     className={`h-1.5 flex-1 rounded-full ${
-                      index < remaining
-                        ? "bg-zinc-900 dark:bg-zinc-100"
-                        : "bg-zinc-200 dark:bg-zinc-800"
+                      index < remaining ? "bg-accent" : "bg-border"
                     }`}
                   />
                 ))}
               </div>
 
-              <p className="mt-2.5 text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="mt-2.5 font-mono text-xs text-text-muted">
                 {generatedAt ? `Generated ${generatedAt}` : null}
                 {generatedAt && used > 0 ? " · " : null}
                 {used > 0 ? `${used} used` : null}
@@ -203,22 +184,22 @@ export function RecoveryCodes({
 
             {remaining === 0 ? (
               <Alert>
-                Every code has been used. Generate a new set to keep a way back
-                into your account.
+                Every code has been used. Generate a new set to keep a way
+                back into your account.
               </Alert>
             ) : remaining <= LOW_THRESHOLD ? (
-              <p className="text-xs text-amber-700 dark:text-amber-500">
+              <Alert variant="warning">
                 Running low. Generate a new set soon.
-              </p>
+              </Alert>
             ) : null}
 
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="text-xs text-text-muted">
               Codes are stored hashed, so they can&apos;t be shown again. Lost
               them? Generate a new set — the old codes stop working.
             </p>
           </div>
         ) : (
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+          <p className="text-sm text-text-secondary">
             No recovery codes yet. Generate a set and store them offline.
           </p>
         )}
@@ -227,48 +208,44 @@ export function RecoveryCodes({
 
         {codes ? null : confirmingReplace ? (
           <div className="space-y-2">
-            <p className="text-sm text-zinc-700 dark:text-zinc-300">
+            <p className="text-sm text-text-secondary">
               Replace the current codes? Every unused code stops working
               immediately.
             </p>
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
+              <Button
+                variant="primary"
                 onClick={handleGenerate}
                 disabled={pending}
-                className={primaryButton}
+                pending={pending}
               >
-                {pending ? <Spinner /> : null}
                 {pending ? "Generating…" : "Yes, replace them"}
-              </button>
-              <button
-                type="button"
+              </Button>
+              <Button
                 onClick={() => setConfirmingReplace(false)}
                 disabled={pending}
-                className={secondaryButton}
               >
                 Cancel
-              </button>
+              </Button>
             </div>
           </div>
         ) : (
-          <button
-            type="button"
+          <Button
+            variant={hasCodes ? "secondary" : "primary"}
             // A second set silently kills the first, so an existing set gets a
             // confirm step instead of a one-click overwrite
             onClick={
               hasCodes ? () => setConfirmingReplace(true) : handleGenerate
             }
             disabled={pending}
-            className={hasCodes ? secondaryButton : primaryButton}
+            pending={pending}
           >
-            {pending ? <Spinner /> : null}
             {pending
               ? "Generating…"
               : hasCodes
                 ? "Generate new codes"
                 : "Generate recovery codes"}
-          </button>
+          </Button>
         )}
       </div>
     </section>
@@ -278,16 +255,16 @@ export function RecoveryCodes({
 function StatusBadge({ active }: { active: boolean }) {
   return (
     <span
-      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium ${
+      className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
         active
-          ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
-          : "border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400"
+          ? "border-success-border bg-success-bg text-success-text"
+          : "border-border-card bg-surface-subtle text-text-muted"
       }`}
     >
       <span
         aria-hidden
         className={`h-1.5 w-1.5 rounded-full ${
-          active ? "bg-emerald-500" : "bg-zinc-400 dark:bg-zinc-600"
+          active ? "bg-accent" : "bg-text-tertiary"
         }`}
       />
       {active ? "Active" : "Not set up"}
